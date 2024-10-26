@@ -1,0 +1,71 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Pytest cache
+.pytest_cache/
+
+# MyPy cache
+.mypy_cache/
+
+# Cache files
+*.cache
+*.log
+
+# Pydantic cache
+.pdm/
+
+# SQLite databases
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+*.env
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# Pyre type checker
+.pyre/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Python packaging
+*.egg
+*.egg-info/
+dist/
+build/
+*.tar.gz
+*.whl
+
+# IDE files
+.idea/
+*.iml
+
+# Gunicorn/Pydantic Logs
+gunicorn.error.log
