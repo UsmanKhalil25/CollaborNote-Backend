@@ -2,7 +2,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import HTTPException,status,Depends
 from app.config.setting import settings
 from jose import jwt,JWTError
-from app.models.blackListToken import BlackListToken
+from app.models.blacklist_token import BlackListToken
 from app.models.user import User
 from app.schemas import TokenData, UserBase
 from datetime import datetime, timedelta

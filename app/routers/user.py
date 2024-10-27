@@ -1,9 +1,7 @@
 from fastapi import APIRouter,status,Depends
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
-from app.controllers.userController import UserController
-from app.models.blackListToken import BlackListToken
+from app.controllers.user_controller import UserController
 from app.schemas import UserBase, UserCreate, UserLogin
-from app.services.userService import UserService
 from app.secutiry import get_current_user, oauth2_scheme
 
 router = APIRouter(
