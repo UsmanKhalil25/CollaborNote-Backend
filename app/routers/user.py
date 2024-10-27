@@ -1,8 +1,8 @@
 from fastapi import APIRouter,status,Depends
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from app.controllers.user_controller import UserController
-from app.schemas import UserBase, UserCreate, UserLogin
-from app.secutiry import get_current_user, oauth2_scheme
+from app.schemas import UserCreate, UserLogin
+from app.secutiry import oauth2_scheme
 
 router = APIRouter(
     prefix="/api/users",
@@ -27,8 +27,7 @@ async def login(user_credentials:OAuth2PasswordRequestForm=Depends()
 
 
 @router.post("/logout")
-async def logout(token:str=Depends(oauth2_scheme),user_controller:UserController=Depends(get_user_controller),
-                    current_user:UserBase=Depends(get_current_user)):
+async def logout(token:str=Depends(oauth2_scheme),user_controller:UserController=Depends(get_user_controller)):
     await user_controller.make_token_blacklist(token=token)
 
     return {"message": "Logout successful"}
