@@ -31,8 +31,7 @@ class UserService:
 
         await new_user.insert()
         
-    async def login_user(self,user_login:UserLogin):
-         
+    async def login_user(self,user_login:UserLogin):    
         existing_user=await self.get_user(user_email=user_login.email)
         if existing_user is None or verify_password(plain_password=user_login.password,
                            hashed_password=existing_user.password) is False: 
