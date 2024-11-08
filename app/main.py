@@ -1,8 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from app.routers import user
 from app.config.database import db_lifespan
 from fastapi.middleware.cors import CORSMiddleware
-
 
 app = FastAPI(lifespan=db_lifespan)
 
@@ -18,4 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user.router)
+api_router = APIRouter(prefix="/api")
+
+api_router.include_router(user.router)
+
+app.include_router(api_router)

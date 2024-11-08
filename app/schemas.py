@@ -2,19 +2,19 @@ from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr
 
 class UserBase(BaseModel):
-    email:EmailStr
+    email: EmailStr
 
 class UserCreate(UserBase):
-    first_name:str
-    last_name:str
-    password:str
+    first_name: str 
+    last_name: str 
+    password: str 
 
 class UserLogin(UserBase):
-    password:str
+    password: str
 
 class Token(BaseModel):
-    access_token:str
-    token_type:str
+    access_token: str
+    token_type: str
 
 class TokenData(BaseModel):
-    id:PydanticObjectId
+    id: PydanticObjectId
