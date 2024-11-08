@@ -6,7 +6,6 @@ from app.schemas import UserCreate, UserLogin
 from app.security import create_access_token
 from app.utils import hash_password, verify_password
 
-
 class UserService:
 
     async def get_user(self, user_email: EmailStr) -> User | None:
@@ -33,6 +32,7 @@ class UserService:
         await new_user.insert()
         
     async def login_user(self, user_login: UserLogin) -> str:
+        """Authenticate user and return access token."""
         existing_user = await self.get_user(user_email=user_login.email)
         if not existing_user or not verify_password(
             plain_password=user_login.password,
@@ -49,5 +49,6 @@ class UserService:
         return access_token
 
     async def make_token_blacklist(self, token: str) -> None:
+        """Blacklist the token for logout."""
         blacklist_token = BlackListToken(token=token)
         await blacklist_token.insert()
