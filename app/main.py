@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, APIRouter
 from app.config.database import db_lifespan
-from app.routers import user
+from app.routers import auth
 from fastapi.middleware.cors import CORSMiddleware
 from app.utils import http_exception_handler, validation_exception_handler
 from fastapi.exceptions import RequestValidationError
@@ -25,7 +25,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 api_router = APIRouter(prefix="/api")
 
-api_router.include_router(user.router)
+api_router.include_router(auth.router)
 
 app.include_router(api_router)
 
