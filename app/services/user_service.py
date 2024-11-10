@@ -1,54 +1,95 @@
-from fastapi import HTTPException, status
+from typing import List
 from pydantic import EmailStr
-from app.models.blacklist_token import BlackListToken
+from bson import ObjectId
+from fastapi import HTTPException, status
 from app.models.user import User
-from app.schemas import UserCreate, UserLogin
-from app.security import create_access_token
-from app.utils import hash_password, verify_password
+
 
 class UserService:
 
-    async def get_user(self, user_email: EmailStr) -> User | None:
-        """Fetch a user by email."""
-        return await User.find_one({"email": user_email})
-    
-    async def register_user(self, user: UserCreate) -> None:
-        """Register a new user, ensuring the email is unique."""
-        existing_user = await self.get_user(user_email=user.email)
-        if existing_user:
+    def _convert_to_object_id(self, user_id: str) -> ObjectId:
+        """Convert a string user ID to an ObjectId."""
+        if not ObjectId.is_valid(user_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+                detail="Invalid user ID format"
             )
+        return ObjectId(user_id)
         
-        hashed_password = hash_password(password=user.password)
+    async def _get_user_by_id(self, user_id: ObjectId) -> User:
+        """Fetch a user by user ID, raises HTTPException if not found."""
 
-        new_user = User(
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            password=hashed_password,
-        )
-        await new_user.insert()
-        
-    async def login_user(self, user_login: UserLogin) -> str:
-        """Authenticate user and return access token."""
-        existing_user = await self.get_user(user_email=user_login.email)
-        if not existing_user or not verify_password(
-            plain_password=user_login.password,
-            hashed_password=existing_user.password
-        ):
+        user = await User.find_one({"_id": user_id})
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid credentials"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User does not exist"
+            )
+        return user
+
+    async def get_user_by_email(self, user_email: EmailStr) -> User | None:
+        """Fetch a user by email."""
+        
+        return await User.find_one({"email": user_email})
+
+    async def get_user_friends(self, user_id: str) -> List[User]:
+        """Fetch a list of friends for a given user."""
+        
+        user = await self._get_user_by_id(self._convert_to_object_id(user_id))
+        friends = await User.find({"_id": {"$in": user.friends}}).to_list()
+        return friends
+
+    async def _check_if_already_friends(self, user: User, friend_id: str):
+        """Check if two users are already friends."""
+
+        if self._convert_to_object_id(friend_id) in user.friends:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You are already friends"
             )
         
-        access_token = create_access_token(data={
-            "user_id": str(existing_user.id)
-        })
-        return access_token
+    async def add_friend(self, user_id: str, friend_id: str):
+        """Add a friend to a user's friend list."""
+        
+        if user_id == friend_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot add yourself as a friend"
+            )
 
-    async def make_token_blacklist(self, token: str) -> None:
-        """Blacklist the token for logout."""
-        blacklist_token = BlackListToken(token=token)
-        await blacklist_token.insert()
+        user = await self._get_user_by_id(self._convert_to_object_id(user_id))
+        friend = await self._get_user_by_id(self._convert_to_object_id(friend_id))
+
+        await self._check_if_already_friends(user, friend_id)
+
+        user.friends.append(friend_id)
+        await user.save()
+
+        friend.friends.append(user_id)
+        await friend.save()
+
+    async def remove_friend(self, user_id: str, friend_id: str):
+        """Remove a friend from a user's friend list."""
+        
+        if user_id == friend_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot remove yourself from your friend list"
+            )
+
+        user = await self._get_user_by_id(self._convert_to_object_id(user_id))
+        friend = await self._get_user_by_id(self._convert_to_object_id(friend_id))
+
+        if self._convert_to_object_id(friend_id) not in user.friends:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You are not friends with this user"
+            )
+
+        user.friends.remove(self._convert_to_object_id(friend_id))
+        await user.save()
+
+        friend.friends.remove(self._convert_to_object_id(user_id))
+        await friend.save()
+
+

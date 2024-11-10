@@ -1,29 +1,20 @@
-from fastapi import HTTPException, status
-from app.services.user_service import UserService
-from app.schemas import UserCreate, UserLogin
+from fastapi import HTTPException
 from app.utils import create_response
+from app.services.user_service import UserService
+from app.constants import RESPONSE_STATUS_SUCCESS
 
 class UserController:
     def __init__(self):
         self.user_service = UserService()
 
-    async def register_user(self, user: UserCreate):
-        try:
-            await self.user_service.register_user(user)
-            return create_response("success", "User registered successfully")
-        except HTTPException as e:
-            raise e
+    async def get_user_friends(self, user_id: str):
+        friends = await self.user_service.get_user_friends(user_id)
+        return create_response(RESPONSE_STATUS_SUCCESS, "Friends fetched successfully", data={"friends":friends})
+    
+    async def add_friend(self, user_id: str, friend_id: str):
+        await self.user_service.add_friend(user_id, friend_id)
+        return create_response(RESPONSE_STATUS_SUCCESS, "Friend successfully added")
 
-    async def login_user(self, user_login: UserLogin):
-        try:
-            access_token = await self.user_service.login_user(user_login)
-            return create_response("success", "Login successful", data={"access_token": access_token})
-        except HTTPException as e:
-            raise e
-
-    async def logout_user(self, token: str):
-        try:
-            await self.user_service.make_token_blacklist(token)
-            return create_response("success", "Logout successful")
-        except HTTPException as e:
-            raise e
+    async def remove_friend(self, user_id: str, friend_id: str):
+        await self.user_service.remove_friend(user_id, friend_id)
+        return create_response(RESPONSE_STATUS_SUCCESS, "Friend successfully removed")

@@ -4,6 +4,7 @@ from typing import Any, Dict
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from app.constants import RESPONSE_STATUS_ERROR
 
 
 
@@ -30,7 +31,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={
-            "status": "error",
+            "status": RESPONSE_STATUS_ERROR,
             "message": exc.detail,
             "data": None,
         },
@@ -41,7 +42,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=400,
         content={
-            "status": "error",
+            "status": RESPONSE_STATUS_ERROR,
             "message": "Validation error",
             "data": exc.errors(),
         },
