@@ -7,7 +7,9 @@ class User(Document):
     first_name: str
     last_name: str
     password: str
-    friends: List[PydanticObjectId] = []
+    friends: List[PydanticObjectId] = []  
+    friend_requests_sent: List[PydanticObjectId] = []  
+    friend_requests_received: List[PydanticObjectId] = []  
 
     class Settings:
         collection = "users"

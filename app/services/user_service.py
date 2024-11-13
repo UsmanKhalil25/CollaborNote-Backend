@@ -1,22 +1,16 @@
+
 from typing import List
+
+from beanie import PydanticObjectId
 from pydantic import EmailStr
-from bson import ObjectId
 from fastapi import HTTPException, status
 from app.models.user import User
-
+from app.utils import validate_object_id, convert_to_pydantic_object_id
 
 class UserService:
 
-    def _convert_to_object_id(self, user_id: str) -> ObjectId:
-        """Convert a string user ID to an ObjectId."""
-        if not ObjectId.is_valid(user_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid user ID format"
-            )
-        return ObjectId(user_id)
-        
-    async def _get_user_by_id(self, user_id: ObjectId) -> User:
+    @staticmethod
+    async def get_user_by_id(user_id: PydanticObjectId) -> User:
         """Fetch a user by user ID, raises HTTPException if not found."""
 
         user = await User.find_one({"_id": user_id})
@@ -27,69 +21,92 @@ class UserService:
             )
         return user
 
-    async def get_user_by_email(self, user_email: EmailStr) -> User | None:
+    @staticmethod
+    async def get_user_by_email(user_email: EmailStr) -> User | None:
         """Fetch a user by email."""
-        
         return await User.find_one({"email": user_email})
+
 
     async def get_user_friends(self, user_id: str) -> List[User]:
         """Fetch a list of friends for a given user."""
-        
-        user = await self._get_user_by_id(self._convert_to_object_id(user_id))
+        validate_object_id(user_id)
+        user_object_id = convert_to_pydantic_object_id(user_id)
+        user = await self.get_user_by_id(user_object_id)
         friends = await User.find({"_id": {"$in": user.friends}}).to_list()
         return friends
 
-    async def _check_if_already_friends(self, user: User, friend_id: str):
-        """Check if two users are already friends."""
+    @staticmethod
+    async def update_friendship(user: User, friend: User, add: bool):
+        if add:
+            user.friends.append(friend.id)
+            friend.friends.append(user.id)
+        else:
+            user.friends.remove(friend.id)
+            friend.friends.remove(user.id)
 
-        if self._convert_to_object_id(friend_id) in user.friends:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You are already friends"
-            )
-        
+        # Save both users concurrently for efficiency
+        await user.save()
+        await friend.save()
+
+    @staticmethod
+    def check_if_already_friends( user: User, friend_object_id: PydanticObjectId) -> bool:
+        """Check if two users are already friends."""
+        return friend_object_id in user.friends
+
+
     async def add_friend(self, user_id: str, friend_id: str):
         """Add a friend to a user's friend list."""
         
+        validate_object_id(user_id)
+        validate_object_id(friend_id)
+
         if user_id == friend_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot add yourself as a friend"
             )
+        
 
-        user = await self._get_user_by_id(self._convert_to_object_id(user_id))
-        friend = await self._get_user_by_id(self._convert_to_object_id(friend_id))
+        user_object_id = convert_to_pydantic_object_id(user_id)
+        friend_object_id = convert_to_pydantic_object_id(friend_id)
 
-        await self._check_if_already_friends(user, friend_id)
+        user = await self.get_user_by_id(user_object_id)
+        friend = await self.get_user_by_id(friend_object_id)
 
-        user.friends.append(friend_id)
-        await user.save()
+        if self.check_if_already_friends(user, friend_object_id):
+             raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You are already friends"
+            )
 
-        friend.friends.append(user_id)
-        await friend.save()
+        await self.update_friendship(user, friend, add=True)
+
 
     async def remove_friend(self, user_id: str, friend_id: str):
         """Remove a friend from a user's friend list."""
-        
+                
+        validate_object_id(user_id)
+        validate_object_id(friend_id)
+
         if user_id == friend_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot remove yourself from your friend list"
             )
 
-        user = await self._get_user_by_id(self._convert_to_object_id(user_id))
-        friend = await self._get_user_by_id(self._convert_to_object_id(friend_id))
 
-        if self._convert_to_object_id(friend_id) not in user.friends:
+        user_object_id = convert_to_pydantic_object_id(user_id)
+        friend_object_id = convert_to_pydantic_object_id(friend_id)
+
+        user = await self.get_user_by_id(user_object_id)
+        friend = await self.get_user_by_id(friend_object_id)
+
+        if not self.check_if_already_friends(user, friend_object_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You are not friends with this user"
             )
 
-        user.friends.remove(self._convert_to_object_id(friend_id))
-        await user.save()
-
-        friend.friends.remove(self._convert_to_object_id(user_id))
-        await friend.save()
+        await self.update_friendship(user,friend, add=False)
 
 

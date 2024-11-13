@@ -8,7 +8,8 @@ from app.services.user_service import UserService
 
 class AuthService:
 
-    async def register(self, user: UserCreate, user_service: UserService) -> None:
+    @staticmethod
+    async def register(user: UserCreate, user_service: UserService) -> None:
         """Register a new user, ensuring the email is unique."""
         existing_user = await user_service.get_user_by_email(user.email)
         if existing_user:
@@ -26,8 +27,9 @@ class AuthService:
             password=hashed_password,
         )
         await new_user.insert()
-        
-    async def login(self, user_login: UserLogin, user_service: UserService) -> str:
+
+    @staticmethod
+    async def login(user_login: UserLogin, user_service: UserService) -> str:
         """Authenticate user and return access token."""
         existing_user = await user_service.get_user_by_email(user_login.email)
         if not existing_user or not verify_password(
@@ -44,7 +46,8 @@ class AuthService:
         })
         return access_token
 
-    async def blacklist_token(self, token: str) -> None:
+    @staticmethod
+    async def blacklist_token(token: str) -> None:
         """Blacklist the token for logout."""
         token = BlackListToken(token=token)
         await token.insert()

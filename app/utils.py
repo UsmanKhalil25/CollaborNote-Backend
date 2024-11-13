@@ -1,9 +1,10 @@
-from passlib.context import CryptContext
-from fastapi import HTTPException
-from typing import Any, Dict
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from passlib.context import CryptContext
+from bson import ObjectId
+from beanie import PydanticObjectId
+from typing import Any, Dict
 from app.constants import RESPONSE_STATUS_ERROR
 
 
@@ -47,3 +48,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "data": exc.errors(),
         },
     )
+
+
+def validate_object_id(id: str):
+    """Validates the given ID format."""
+    if not ObjectId.is_valid(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid ID format"
+        )
+
+def convert_to_pydantic_object_id(id: str) -> PydanticObjectId:
+    """Converts a string ID to a PydanticObjectId."""
+    return PydanticObjectId(id)
