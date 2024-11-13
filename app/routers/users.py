@@ -33,3 +33,4 @@ async def remove_friend(
     user_controller: UserController = Depends(get_user_controller)
 ):
     return await user_controller.remove_friend(user_id, friend_id)
+
