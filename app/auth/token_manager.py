@@ -1,3 +1,4 @@
+from typing import Optional
 from app.config.setting import settings
 from jose import jwt, JWTError
 from app.schemas import TokenData
@@ -11,7 +12,6 @@ class TokenManager:
         self.refresh_token_expire_days = settings.refresh_token_expire_days
 
     def _create_token(self, data: dict, expires_delta: timedelta) -> str:
-        """Generate a JWT token with expiration."""
         to_encode = data.copy()
         expire = datetime.now() + expires_delta
         to_encode.update({"exp": expire})
@@ -19,16 +19,16 @@ class TokenManager:
         return encoded_jwt
 
     def create_access_token(self, data: dict) -> str:
-        """Generate an access token with a short expiration time."""
         expires_delta = timedelta(minutes=self.access_token_expire_minutes)
         return self._create_token(data, expires_delta)
 
     def create_refresh_token(self, data: dict) -> str:
-        """Generate a refresh token with a configurable expiration time."""
         expires_delta = timedelta(days=self.refresh_token_expire_days)
         return self._create_token(data, expires_delta)
 
-    def verify_access_token(self, token: str, credentials_exception):
+
+    def verify_token(self, token: str) -> Optional[str]:
+        """Verify and decode the refresh token, returning the user_id if valid."""
         try:
             payload = jwt.decode(
                 token,
@@ -36,13 +36,10 @@ class TokenManager:
                 algorithms=[self.algorithm],
                 options={"verify_exp": True}
             )
-            user_id = payload.get('user_id')
+            user_id = payload.get("user_id")
             if user_id is None:
-                raise credentials_exception
-            token_data = TokenData(id=user_id)
+                return None  # Return None if user_id is not found
+            return user_id  # Return the user_id if the token is valid
         except JWTError as e:
-            print(e)
-            raise credentials_exception
-
-        return token_data
-
+            print(f"JWT error: {e}")
+            return None
