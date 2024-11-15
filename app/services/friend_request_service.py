@@ -1,22 +1,39 @@
+from fastapi import HTTPException, status
 from datetime import datetime
 from typing import List
 from app.models.friend_request import FriendRequest, FriendRequestStatus
+from app.models.user import User
 from app.services.user_service import UserService
 from app.utils import validate_object_id, convert_to_pydantic_object_id
-from fastapi import HTTPException, status
 
 class FriendRequestService:
+
     @staticmethod
-    async def get_received_requests(user_id: str, user_service: UserService) -> List[FriendRequest]:
+    async def get_received_requests(user_id: str, user_service: UserService) -> List[dict]:
         validate_object_id(user_id)
         user_object_id = convert_to_pydantic_object_id(user_id)
 
-        # calling this only to be sure user is present (no need to store the user)
         await user_service.get_user_by_id(user_object_id)
 
         received_requests = await FriendRequest.find(FriendRequest.receiver_id == user_object_id).to_list()
-        
-        return received_requests
+
+        requests_with_senders = []
+        for friend_request in received_requests:
+            sender_user = await User.get(friend_request.sender_id)
+            if sender_user:
+                request_data = {
+                    "friend_request": friend_request,
+                    "sender": {
+                        "_id": str(sender_user.id),
+                        "first_name": sender_user.first_name,
+                        "last_name": sender_user.last_name,
+                        "email": sender_user.email
+                    }
+                }
+                requests_with_senders.append(request_data)
+
+        return requests_with_senders
+
 
     @staticmethod
     async def send_friend_request(from_user_id: str, to_user_id: str, user_service: UserService):
@@ -64,15 +81,15 @@ class FriendRequestService:
         )
         await friend_request.insert()
 
-        from_user.friend_requests_sent.append(to_user_object_id)
-        to_user.friend_requests_received.append(from_user_object_id)
+        from_user.friend_requests_sent.append(friend_request.id)
+        to_user.friend_requests_received.append(friend_request.id)
         await from_user.save()
         await to_user.save()
 
         return friend_request
 
     @staticmethod
-    async def update_request_status(request_id: str, new_state: str, user_service: UserService):
+    async def update_request_status(user_id: str, request_id: str, new_state: str, user_service: UserService):
         validate_object_id(request_id)
 
         normalized_state = new_state.upper()
@@ -83,6 +100,7 @@ class FriendRequestService:
                 detail="Invalid state"
             )
 
+
         request_object_id = convert_to_pydantic_object_id(request_id)
         friend_request = await FriendRequest.get(request_object_id)
         if not friend_request:
@@ -90,6 +108,17 @@ class FriendRequestService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Friend request not found"
             )
+
+        user_object_id = convert_to_pydantic_object_id(user_id)
+
+        user = await user_service.get_user_by_id(user_object_id)
+        print(user.friend_requests_received)
+        if convert_to_pydantic_object_id(request_id) not in user.friend_requests_received:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to update this friend request"
+            )
+
 
         if friend_request.status == valid_state:
             raise HTTPException(
@@ -120,6 +149,16 @@ class FriendRequestService:
 
         if valid_state == FriendRequestStatus.ACCEPTED:
             # TODO: Add notification logic
+            # doing this to remove any other mutual request between the users
+            existing_request = await FriendRequest.find_one(
+                FriendRequest.receiver_id == friend_request.sender_id,
+                FriendRequest.sender_id == friend_request.receiver_id,
+                FriendRequest.status == FriendRequestStatus.PENDING
+            )
+
+            if existing_request:
+                await existing_request.delete()
+
             await user_service.add_friend(str(friend_request.sender_id), str(friend_request.receiver_id))
 
         await friend_request.save()

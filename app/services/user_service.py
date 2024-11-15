@@ -1,9 +1,7 @@
-
+from fastapi import HTTPException, status
 from typing import List
-
 from beanie import PydanticObjectId
 from pydantic import EmailStr
-from fastapi import HTTPException, status
 from app.models.user import User
 from app.utils import validate_object_id, convert_to_pydantic_object_id
 
@@ -21,6 +19,7 @@ class UserService:
             )
         return user
 
+
     @staticmethod
     async def get_user_by_email(user_email: EmailStr) -> User | None:
         """Fetch a user by email."""
@@ -35,6 +34,7 @@ class UserService:
         friends = await User.find({"_id": {"$in": user.friends}}).to_list()
         return friends
 
+
     @staticmethod
     async def update_friendship(user: User, friend: User, add: bool):
         if add:
@@ -48,6 +48,7 @@ class UserService:
         await user.save()
         await friend.save()
 
+
     @staticmethod
     def check_if_already_friends( user: User, friend_object_id: PydanticObjectId) -> bool:
         """Check if two users are already friends."""
@@ -56,7 +57,7 @@ class UserService:
 
     async def add_friend(self, user_id: str, friend_id: str):
         """Add a friend to a user's friend list."""
-        
+
         validate_object_id(user_id)
         validate_object_id(friend_id)
 
@@ -65,7 +66,6 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot add yourself as a friend"
             )
-        
 
         user_object_id = convert_to_pydantic_object_id(user_id)
         friend_object_id = convert_to_pydantic_object_id(friend_id)
@@ -93,7 +93,6 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot remove yourself from your friend list"
             )
-
 
         user_object_id = convert_to_pydantic_object_id(user_id)
         friend_object_id = convert_to_pydantic_object_id(friend_id)

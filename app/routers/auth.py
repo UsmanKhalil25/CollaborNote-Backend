@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Header
-from app.auth import token_manager
+from fastapi import APIRouter, Depends, status, Response
 from app.controllers.auth_controller import AuthController
 from app.services.user_service import UserService
 from app.auth.token_manager import TokenManager
-from app.schemas import UserCreate, UserLogin
+from app.schemas import UserCreate, UserLogin, TokenData
 
 router = APIRouter(
     prefix="/auth",
@@ -40,17 +39,11 @@ async def login(
 
 @router.post("/logout")
 async def logout(
-    authorization: str = Header(...),  
+    token: TokenData = Depends(get_token_manager().get_current_user),
     auth_controller: AuthController = Depends(get_auth_controller)
 ):
-    token = authorization.split(" ")[1] 
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token missing or malformed"
-        )
-    return await auth_controller.logout(token)
 
+    return await auth_controller.logout(token)
 
 @router.post("/refresh")
 async def refresh(

@@ -8,7 +8,6 @@ from app.auth.token_manager import TokenManager
 
 
 class AuthService:
-
     @staticmethod
     def _set_refresh_token(response: Response, token: str):
         response.set_cookie(
@@ -39,7 +38,6 @@ class AuthService:
         )
         await new_user.insert()
 
-
     async def login(self, response: Response, user_login: UserLogin, user_service: UserService,
                     token_manager: TokenManager) -> dict:
         """Authenticate user and return access token while setting refresh token as HttpOnly cookie."""
@@ -58,11 +56,17 @@ class AuthService:
 
         self._set_refresh_token(response, refresh_token)
 
-        return {"access_token": access_token}
+        return access_token
 
     @staticmethod
     async def blacklist_token(token: str) -> None:
         """Blacklist the token for logout."""
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token missing or malformed"
+            )
         token = BlackListToken(token=token)
         await token.insert()
 

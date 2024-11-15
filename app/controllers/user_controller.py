@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from app.utils import create_response
 from app.services.user_service import UserService
 from app.constants import RESPONSE_STATUS_SUCCESS

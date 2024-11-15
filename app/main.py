@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, APIRouter
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from app.config.database import db_lifespan
 from app.routers import auth, users, friend_requests
-from fastapi.middleware.cors import CORSMiddleware
 from app.utils import http_exception_handler, validation_exception_handler
-from fastapi.exceptions import RequestValidationError
 
 app = FastAPI(lifespan=db_lifespan)
 
