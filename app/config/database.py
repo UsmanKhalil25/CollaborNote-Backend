@@ -1,5 +1,5 @@
-from beanie import init_beanie
 from fastapi import FastAPI
+from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.models.blacklist_token import BlackListToken
 from app.models.user import User
