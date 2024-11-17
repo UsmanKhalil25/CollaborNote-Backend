@@ -14,7 +14,7 @@ def get_user_controller() -> UserController:
 def get_token_manager()-> TokenManager:
     return TokenManager()
 
-@router.get("")
+@router.get("/current")
 async def get_user_info(
     token: TokenData = Depends(get_token_manager().get_current_user),
     user_controller: UserController = Depends(get_user_controller)
