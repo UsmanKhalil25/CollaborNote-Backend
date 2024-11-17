@@ -1,3 +1,4 @@
+from copyreg import constructor
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -50,6 +51,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 def validate_object_id(id: str):
     """Validates the given ID format."""
+    print(f"Validating ID: {id}")
     if not ObjectId.is_valid(id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -60,3 +62,8 @@ def validate_object_id(id: str):
 def convert_to_pydantic_object_id(id: str) -> PydanticObjectId:
     """Converts a string ID to a PydanticObjectId."""
     return PydanticObjectId(id)
+
+
+def convert_to_str(id: PydanticObjectId) -> str:
+    """Converts a PydanticObject ID to a str."""
+    return str(id)
