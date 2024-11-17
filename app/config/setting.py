@@ -8,6 +8,6 @@ class Settings(BaseSettings):
     refresh_token_expire_days:int
 
     class Config:
-        env_file=".env"
+        env_file="env"
 
 settings=Settings()

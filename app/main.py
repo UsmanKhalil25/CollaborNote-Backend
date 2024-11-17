@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.database import db_lifespan
-from app.routers import auth, users, friend_requests
+from app.routers import auth, users, friend_requests,study_room
 from app.utils import http_exception_handler, validation_exception_handler
 
 app = FastAPI(lifespan=db_lifespan)
@@ -27,6 +27,7 @@ api_router = APIRouter(prefix="/api")
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(friend_requests.router)
+api_router.include_router(study_room.router)
 
 app.include_router(api_router)
 
