@@ -15,25 +15,33 @@ class FriendRequestService:
 
         await user_service.get_user_by_id(user_object_id)
 
-        received_requests = await FriendRequest.find(FriendRequest.receiver_id == user_object_id).to_list()
+        received_requests = await FriendRequest.find(
+            FriendRequest.receiver_id == user_object_id,
+            FriendRequest.status == FriendRequestStatus.PENDING
+        ).to_list()
 
         requests_with_senders = []
         for friend_request in received_requests:
             sender_user = await User.get(friend_request.sender_id)
             if sender_user:
-                request_data = {
-                    "friend_request": friend_request,
+                friend_request_data = {
+                    "_id": str(friend_request.id),
+                    "created_at": friend_request.created_at,
+                    "receiver_id": str(friend_request.receiver_id),
+                    "sender_id": str(friend_request.sender_id),
+                    "status": friend_request.status,
+                    "responded_at": friend_request.responded_at,
                     "sender": {
                         "_id": str(sender_user.id),
+                        "avatar": sender_user.avatar,
                         "first_name": sender_user.first_name,
                         "last_name": sender_user.last_name,
-                        "email": sender_user.email
-                    }
+                        "email": sender_user.email,
+                    },
                 }
-                requests_with_senders.append(request_data)
+                requests_with_senders.append(friend_request_data)
 
         return requests_with_senders
-
 
     @staticmethod
     async def send_friend_request(from_user_id: str, to_user_id: str, user_service: UserService):
