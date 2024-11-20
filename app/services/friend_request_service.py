@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from app.models.friend_request import FriendRequest, FriendRequestStatus
 from app.models.user import User
 from app.services.user_service import UserService
@@ -9,17 +9,31 @@ from app.utils import validate_object_id, convert_to_pydantic_object_id
 class FriendRequestService:
 
     @staticmethod
-    async def get_received_requests(user_id: str, user_service: UserService) -> List[dict]:
+    async def get_received_requests(user_id: str, status: Optional[str], user_service: UserService) -> List[dict]:
         validate_object_id(user_id)
+
+        upper_case_status = None
+
+        if status:
+            upper_case_status = status.upper()
+            valid_state = FriendRequestStatus.__members__.get(upper_case_status)
+            if not valid_state:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid status"
+                )
+        
         user_object_id = convert_to_pydantic_object_id(user_id)
 
         await user_service.get_user_by_id(user_object_id)
 
-        received_requests = await FriendRequest.find(
-            FriendRequest.receiver_id == user_object_id,
-            FriendRequest.status == FriendRequestStatus.PENDING
-        ).to_list()
+        query = {FriendRequest.receiver_id: user_object_id}
+        if upper_case_status:
+            query[FriendRequest.status] = status
 
+        received_requests = await FriendRequest.find_many(query).to_list()
+        print(received_requests)
+        
         requests_with_senders = []
         for friend_request in received_requests:
             sender_user = await User.get(friend_request.sender_id)
@@ -33,7 +47,6 @@ class FriendRequestService:
                     "responded_at": friend_request.responded_at,
                     "sender": {
                         "_id": str(sender_user.id),
-                        "avatar": sender_user.avatar,
                         "first_name": sender_user.first_name,
                         "last_name": sender_user.last_name,
                         "email": sender_user.email,
@@ -42,6 +55,7 @@ class FriendRequestService:
                 requests_with_senders.append(friend_request_data)
 
         return requests_with_senders
+
 
     @staticmethod
     async def send_friend_request(from_user_id: str, to_user_id: str, user_service: UserService):
@@ -97,15 +111,15 @@ class FriendRequestService:
         return friend_request
 
     @staticmethod
-    async def update_request_status(user_id: str, request_id: str, new_state: str, user_service: UserService):
+    async def update_request_status(user_id: str, request_id: str, new_status: str, user_service: UserService):
         validate_object_id(request_id)
 
-        normalized_state = new_state.upper()
-        valid_state = FriendRequestStatus.__members__.get(normalized_state)
+        upper_case_status = new_status.upper()
+        valid_state = FriendRequestStatus.__members__.get(upper_case_status)
         if not valid_state:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid state"
+                detail="Invalid status"
             )
 
 
@@ -120,7 +134,7 @@ class FriendRequestService:
         user_object_id = convert_to_pydantic_object_id(user_id)
 
         user = await user_service.get_user_by_id(user_object_id)
-        print(user.friend_requests_received)
+        
         if convert_to_pydantic_object_id(request_id) not in user.friend_requests_received:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -134,19 +148,19 @@ class FriendRequestService:
                 detail="The request is already in the desired state"
             )
 
-        if friend_request.status in {FriendRequestStatus.ACCEPTED, FriendRequestStatus.REJECTED} and normalized_state == "PENDING":
+        if friend_request.status in {FriendRequestStatus.ACCEPTED, FriendRequestStatus.REJECTED} and upper_case_status == "PENDING":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot revert to pending from accepted or rejected"
             )
 
-        if friend_request.status == FriendRequestStatus.REJECTED and normalized_state == "ACCEPTED":
+        if friend_request.status == FriendRequestStatus.REJECTED and upper_case_status == "ACCEPTED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot accept a rejected friend request"
             )
 
-        if friend_request.status == FriendRequestStatus.ACCEPTED and normalized_state == "REJECTED":
+        if friend_request.status == FriendRequestStatus.ACCEPTED and upper_case_status == "REJECTED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot reject an accepted friend request"

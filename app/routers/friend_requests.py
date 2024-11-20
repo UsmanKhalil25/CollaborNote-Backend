@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from typing import Optional
 from app.schemas import TokenData
 from app.auth.token_manager import TokenManager
 from app.services.user_service import UserService
@@ -20,12 +21,13 @@ def get_token_manager() -> TokenManager:
 
 @router.get("")
 async def get_received_friend_requests(
+    status: Optional[str] = None,
     token: TokenData = Depends(get_token_manager().get_current_user),
     friend_request_controller: FriendRequestController = Depends(get_friend_request_controller),
     user_service: UserService = Depends(get_user_service)
 ):
     user_id = token.id
-    return await friend_request_controller.get_received_requests(user_id, user_service)
+    return await friend_request_controller.get_received_requests(user_id, status ,user_service)
 
 @router.post("/send/{to_user_id}", status_code=status.HTTP_201_CREATED)
 async def send_friend_request(

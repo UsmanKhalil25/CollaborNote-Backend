@@ -2,10 +2,49 @@ from fastapi import HTTPException, status
 from typing import List
 from beanie import PydanticObjectId
 from pydantic import EmailStr
+from app.models.friend_request import FriendRequest
 from app.models.user import User
 from app.utils import validate_object_id, convert_to_pydantic_object_id
 
 class UserService:
+
+
+    async def search_users(self, query: str, user_id: str):
+        """Fetch users by search query and include if they are friends with the current user or if a friend request exists"""
+        validate_object_id(user_id)
+        user_object_id = convert_to_pydantic_object_id(user_id)
+
+        users = await User.find_many({
+            "email": {"$regex": query, "$options": "i"},
+            "_id": {"$ne": user_object_id}
+        }).to_list()
+
+        current_user = await self.get_user_by_id(user_object_id)
+
+        friend_ids = set(current_user.friends)
+        user_ids = [user.id for user in users]
+
+        sent_requests = await FriendRequest.find_many({
+            "sender_id": user_object_id,
+            "receiver_id": {"$in": user_ids}
+        }).to_list()
+
+        sent_request_receiver_ids = {request.receiver_id for request in sent_requests}
+
+        response = []
+        for user in users:
+            response.append({
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_friend": user.id in friend_ids,
+                "friend_request_sent": user.id in sent_request_receiver_ids,  
+            })
+
+        return response
+
+    
 
     @staticmethod
     async def get_user_by_id(user_id: PydanticObjectId) -> User:
@@ -44,7 +83,6 @@ class UserService:
             user.friends.remove(friend.id)
             friend.friends.remove(user.id)
 
-        # Save both users concurrently for efficiency
         await user.save()
         await friend.save()
 

@@ -14,6 +14,17 @@ def get_user_controller() -> UserController:
 def get_token_manager()-> TokenManager:
     return TokenManager()
 
+
+@router.get("/search")
+async def search_users(
+    query: str,
+    token: TokenData = Depends(get_token_manager().get_current_user),
+    user_controller: UserController = Depends(get_user_controller)
+):
+    user_id = token.id
+    return await user_controller.search_users(query, user_id)
+
+
 @router.get("/current")
 async def get_user_info(
     token: TokenData = Depends(get_token_manager().get_current_user),
@@ -22,6 +33,7 @@ async def get_user_info(
     user_id = token.id
     return await user_controller.get_user_info(user_id)
 
+
 @router.get("/friends")
 async def get_user_friends(
     token: TokenData = Depends(get_token_manager().get_current_user),
@@ -29,6 +41,7 @@ async def get_user_friends(
 ):
     user_id = token.id
     return await user_controller.get_user_friends(user_id)
+
 
 @router.post("/friends/{friend_id}",  status_code=status.HTTP_201_CREATED)
 async def add_friend(

@@ -3,6 +3,7 @@ from pydantic import EmailStr
 from typing import List
 
 class User(Document):
+    _id: PydanticObjectId
     email: EmailStr
     first_name: str
     last_name: str

@@ -1,3 +1,4 @@
+from typing import Optional
 from app.services.user_service import UserService
 from app.utils import create_response
 from app.constants import RESPONSE_STATUS_SUCCESS
@@ -7,8 +8,8 @@ class FriendRequestController:
     def __init__(self):
         self.friend_request_service = FriendRequestService()
         
-    async def get_received_requests(self, user_id: str, user_service: UserService):
-        friend_request = await self.friend_request_service.get_received_requests(user_id, user_service)
+    async def get_received_requests(self, user_id: str, status: Optional[str], user_service: UserService):
+        friend_request = await self.friend_request_service.get_received_requests(user_id, status, user_service)
         return create_response(RESPONSE_STATUS_SUCCESS, "Friend requests fetched successfully", data={"friend_requests": friend_request})
 
     async def send_friend_request(self, from_user_id: str, to_user_id: str, user_service: UserService):
