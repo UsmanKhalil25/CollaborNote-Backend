@@ -1,7 +1,5 @@
 from typing import List
 from app.constants import RESPONSE_STATUS_SUCCESS
-from app.models import user
-from app.models.study_room import StudyRoom
 from app.schemas import StudyRoomCreate, StudyRoomInfoUpdate
 from app.services.study_room_services import StudyRoomServices
 from app.utils import create_response
