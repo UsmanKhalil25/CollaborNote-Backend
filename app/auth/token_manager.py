@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from app.schemas import TokenData
+from app.schemas.token import TokenData
 from app.config.setting import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")

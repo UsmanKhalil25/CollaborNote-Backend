@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from typing import Optional
-from app.schemas import TokenData
+from app.schemas.token import TokenData
 from app.auth.token_manager import TokenManager
 from app.services.user_service import UserService
 from app.controllers.friend_request_controller import FriendRequestController

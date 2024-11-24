@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from app.controllers.user_controller import UserController
 from app.auth.token_manager import TokenManager
-from app.schemas import TokenData
+from app.schemas.token import TokenData
 
 router = APIRouter(
     prefix="/users",

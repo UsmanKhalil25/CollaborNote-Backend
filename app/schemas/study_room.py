@@ -1,34 +1,42 @@
 from datetime import datetime
 from typing import Optional,List
-from beanie import PydanticObjectId
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, Field, model_validator
 
-class UserBase(BaseModel):
-    email: EmailStr
+from app.schemas.participant import Participant, ParticipantOut
 
 
-class UserCreate(UserBase):
-    first_name: str 
-    last_name: str 
-    password: str 
+
+class StudyRoomCreate(BaseModel):
+    name: str = Field(..., description="Name of the study room", max_length=100)
+    description: Optional[str] = Field(None, description="Description of the study room", max_length=500)
 
 
-class UserLogin(UserBase):
-    password: str
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
+class StudyRoomListingOut(BaseModel):
     id: str
+    name: str
+    description: str
+    participants: List[ParticipantOut]
 
+    class Config:
+        orm_mode = True
 
-class Participant(BaseModel):
-    participant_id: str
-    can_edit: bool
+class StudyRoomDetailOut(StudyRoomListingOut):
+    content: str
+    is_active: bool
+    created_at: datetime
+    ended_at: Optional[datetime]
+
+    class Config:
+        orm_mode = True
+
+class StudyRoomUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    class Config:
+        orm_mode = True
 
 
 class StudyRoomOut(BaseModel):
