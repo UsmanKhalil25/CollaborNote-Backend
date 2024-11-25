@@ -41,8 +41,8 @@ class StudyRoomController:
         return create_response(RESPONSE_STATUS_SUCCESS, "Participant added successfully")
     
 
-    async def delete_participant(self, current_user_id:str, study_room_id:str, participant_id: str):
-        await self.study_room_service.delete_participant(current_user_id, study_room_id, participant_id)
+    async def remove_participant(self, current_user_id:str, study_room_id:str, participant_id: str):
+        await self.study_room_service.remove_participant(current_user_id, study_room_id, participant_id)
         return create_response(RESPONSE_STATUS_SUCCESS, "Participant removed successfully")
     
 

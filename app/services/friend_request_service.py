@@ -32,7 +32,6 @@ class FriendRequestService:
             query[FriendRequest.status] = status
 
         received_requests = await FriendRequest.find_many(query).to_list()
-        print(received_requests)
         
         requests_with_senders = []
         for friend_request in received_requests:

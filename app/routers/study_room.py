@@ -89,14 +89,14 @@ async def add_participant(
     
     
 @router.delete("/{study_room_id}/participants/{participant_id}")
-async def delete_participant(
+async def remove_participant(
     study_room_id: str,
     participant_id: str,
     token: TokenData = Depends(get_token_manager().get_current_user),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
-    return await study_room_controller.delete_participant(current_user_id, study_room_id, participant_id)
+    return await study_room_controller.remove_participant(current_user_id, study_room_id, participant_id)
 
 
 @router.patch("/{study_room_id}/participants/{participant_id}")

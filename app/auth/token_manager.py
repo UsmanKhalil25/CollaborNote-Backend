@@ -56,5 +56,4 @@ class TokenManager:
                 detail="Invalid or expired access token.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        # print(f"user--id {user_id}")
         return TokenData(id=user_id)

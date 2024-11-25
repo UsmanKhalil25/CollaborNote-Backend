@@ -51,7 +51,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 def validate_object_id(id: str):
     """Validates the given ID format."""
-    print(f"Validating ID: {id}")
     if not ObjectId.is_valid(id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
