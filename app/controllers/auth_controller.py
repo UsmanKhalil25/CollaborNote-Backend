@@ -1,7 +1,7 @@
 from fastapi import Response
 from app.services.auth_service import AuthService
 from app.services.user_service import UserService
-from app.schemas import UserCreate, UserLogin
+from app.schemas.user import UserCreate, UserLogin
 from app.utils import create_response
 from app.constants import RESPONSE_STATUS_SUCCESS
 from app.auth.token_manager import  TokenManager

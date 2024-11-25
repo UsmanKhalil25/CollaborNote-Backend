@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, Response
 from app.models.blacklist_token import BlackListToken
 from app.models.user import User
-from app.schemas import UserCreate, UserLogin
+from app.schemas.user import UserCreate, UserLogin
 from app.utils import hash_password, verify_password
 from app.services.user_service import UserService
 from app.auth.token_manager import TokenManager

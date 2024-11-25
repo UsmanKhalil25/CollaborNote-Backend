@@ -1,3 +1,4 @@
+from copyreg import constructor
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -60,3 +61,8 @@ def validate_object_id(id: str):
 def convert_to_pydantic_object_id(id: str) -> PydanticObjectId:
     """Converts a string ID to a PydanticObjectId."""
     return PydanticObjectId(id)
+
+
+def convert_to_str(id: PydanticObjectId) -> str:
+    """Converts a PydanticObject ID to a str."""
+    return str(id)
