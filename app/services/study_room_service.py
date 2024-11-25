@@ -23,7 +23,7 @@ class StudyRoomServices:
 
     @staticmethod
     def is_user_participant(user_id: PydanticObjectId, study_room: StudyRoom) -> bool:
-        return any(participant.user_id == user_id for participant in study_room.participants)
+        return any(participant.user_id == user_id and participant.is_active for participant in study_room.participants)
     
     
     @staticmethod
@@ -206,3 +206,124 @@ class StudyRoomServices:
 
         await study_room.save()
 
+
+    async def add_participant(self, current_user_id: str, study_room_id: str):
+
+        validate_object_id(current_user_id)
+        current_user_object_id = convert_to_pydantic_object_id(current_user_id)
+        
+        validate_object_id(study_room_id)
+        study_room_object_id = convert_to_pydantic_object_id(study_room_id)
+        
+        study_room = await StudyRoom.get(study_room_object_id)
+
+        if not study_room:
+            raise HTTPException(status_code=404, detail="Study room not found")
+        
+        is_participant_in_other_room = await StudyRoom.find_one(
+            {
+                "participants.user_id": current_user_object_id, 
+                "is_active": True,
+                "_id": {"$ne": study_room_object_id}  
+            }
+        )
+
+
+        if is_participant_in_other_room:
+            raise HTTPException(
+                status_code=403, 
+                detail="You are already a participant in another study room"
+            )
+    
+        if self.is_user_participant(current_user_object_id, study_room):
+            raise HTTPException(status_code=403, detail="You are already participant of this study room")
+        study_room.participants.append(
+            Participant(
+                user_id=current_user_id,
+                is_owner=False,
+                is_active=True,
+                permission=Permission.can_view,
+            )
+        )
+        await study_room.save()
+
+    
+    async def delete_participant(self, current_user_id: str, study_room_id: str, participant_id: str):
+
+        validate_object_id(current_user_id)
+        current_user_object_id = convert_to_pydantic_object_id(current_user_id)
+        
+        validate_object_id(study_room_id)
+        study_room_object_id = convert_to_pydantic_object_id(study_room_id)
+        
+        validate_object_id(participant_id)
+        participant_object_id = convert_to_pydantic_object_id(participant_id)
+        
+        study_room = await StudyRoom.get(study_room_object_id)
+        if not study_room:
+            raise HTTPException(status_code=404, detail="Study room not found")
+        
+        if not study_room.is_active:
+            raise HTTPException(status_code=404, detail="Study room is not active")
+        
+        if not self.is_user_participant(current_user_object_id, study_room):
+            raise HTTPException(status_code=403, detail="You are not a participant of this study room")
+        
+        if not self.is_user_participant(participant_object_id, study_room):
+            raise HTTPException(status_code=403, detail="The given user is not a participant of this study room")
+
+        current_user = next((p for p in study_room.participants if p.user_id == current_user_object_id), None)
+
+        if not (current_user.is_owner or current_user_object_id == participant_object_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the owner or the participant themselves can remove the participant"
+            )
+        
+        participant = next(
+            (p for p in study_room.participants if p.user_id == participant_object_id), 
+            None
+        )
+
+        participant.is_active = False
+
+        await study_room.save()
+
+
+    async def update_participant_permission(self, current_user_id: str, study_room_id: str, participant_id: str, permission: str):
+
+        if permission not in Permission.__members__.values():
+            raise HTTPException(status_code=400, detail="Invalid permission")
+        
+        validate_object_id(current_user_id)
+        current_user_object_id = convert_to_pydantic_object_id(current_user_id)
+        
+        validate_object_id(study_room_id)
+        study_room_object_id = convert_to_pydantic_object_id(study_room_id)
+        
+        validate_object_id(participant_id)
+        participant_object_id = convert_to_pydantic_object_id(participant_id)
+        
+        study_room = await StudyRoom.get(study_room_object_id)
+        if not study_room:
+            raise HTTPException(status_code=404, detail="Study room not found")
+        
+        if not study_room.is_active:
+            raise HTTPException(status_code=404, detail="Study room is not active")
+        
+        if not self.is_user_participant(current_user_object_id, study_room):
+            raise HTTPException(status_code=403, detail="You are not a participant of this study room")
+        
+        if not self.is_user_owner(study_room, current_user_object_id):
+            raise HTTPException(status_code=403, detail="You don't have permissions to grant participants permission")
+        
+        if not self.is_user_participant(participant_object_id, study_room):
+            raise HTTPException(status_code=403, detail="The given user is not a participant of this study room")
+
+        participant = next((p for p in study_room.participants if p.id == participant_object_id), None)
+
+        if participant.permission == permission:
+            raise HTTPException(status_code=400, detail="The new permission is the same as the current permission")
+
+        participant.permission = permission
+        await study_room.save()
