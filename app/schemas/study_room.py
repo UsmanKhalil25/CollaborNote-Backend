@@ -16,6 +16,7 @@ class StudyRoomListingOut(BaseModel):
     name: str
     description: str
     participants: List[ParticipantOut]
+    created_at: datetime
 
     class Config:
         orm_mode = True

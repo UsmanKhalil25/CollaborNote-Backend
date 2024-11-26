@@ -138,6 +138,7 @@ class StudyRoomServices:
                     id=str(room.id),
                     name=room.name,
                     description=room.description,
+                    created_at=room.created_at,
                     participants=participants_out,
                 )
             )
