@@ -12,3 +12,11 @@ class UserCreate(UserBase):
 
 class UserLogin(UserBase):
     password: str
+
+class UserInfo(BaseModel):
+    email: str
+    first_name: str
+    last_name: str
+        
+    class Config:
+        orm_mode = True

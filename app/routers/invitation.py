@@ -3,6 +3,7 @@ from fastapi import APIRouter, status, Depends
 from app.auth.token_manager import TokenManager
 from app.controllers.invitation_controller import InvitationController
 from app.services.study_room_service import StudyRoomService
+from app.services.user_service import UserService
 
 from app.schemas.token import TokenData
 from app.schemas.invitation import InvitationCreate
@@ -17,17 +18,22 @@ def get_invitation_controller() -> InvitationController:
 def get_study_room_service() -> StudyRoomService:
     return StudyRoomService()
 
+def get_user_service() -> UserService: 
+    return UserService()
+
 def get_token_manager()->TokenManager:
     return TokenManager()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.get("", status_code=status.HTTP_201_CREATED)
 async def get_received_invitations(
     token: TokenData = Depends(get_token_manager().get_current_user),
     invitation_controller: InvitationController = Depends(get_invitation_controller),
+    study_room_service: StudyRoomService = Depends(get_study_room_service),
+    user_service: UserService = Depends(get_user_service)
 ):
     current_user_id = token.id
-    return await invitation_controller.get_received_invitations(current_user_id)
+    return await invitation_controller.get_received_invitations(current_user_id, study_room_service, user_service)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
