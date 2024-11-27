@@ -117,7 +117,20 @@ class StudyRoomService:
         )
 
         await new_study_room.insert()
-        return new_study_room
+        participants_out = [
+                await self.map_participant_to_out(participant) for participant in new_study_room.participants if participant
+            ]
+
+        return StudyRoomDetailOut(
+            id=str(new_study_room.id),
+            name=new_study_room.name,
+            description=new_study_room.description,
+            participants=participants_out,
+            content=new_study_room.content,
+            is_active=new_study_room.is_active,
+            created_at=new_study_room.created_at,
+            ended_at=new_study_room.ended_at,
+        )
 
 
     async def list_study_rooms(self, current_user_id: str) -> List[StudyRoomListingOut]:
