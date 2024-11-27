@@ -1,14 +1,14 @@
 from app.constants import RESPONSE_STATUS_SUCCESS
 
 from app.schemas.study_room import StudyRoomCreate, StudyRoomUpdate
-from app.services.study_room_service import StudyRoomServices
+from app.services.study_room_service import StudyRoomService
 
 from app.utils import create_response
 
 
 class StudyRoomController:
     def __init__(self) -> None:
-        self.study_room_service = StudyRoomServices()
+        self.study_room_service = StudyRoomService()
 
 
     async def create_study_room(self, current_user_id: str, study_room_info: StudyRoomCreate):
