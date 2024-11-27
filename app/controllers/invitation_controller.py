@@ -9,6 +9,11 @@ class InvitationController:
     def __init__(self):
         self.invitation_service = InvitationService()
 
+    async def get_received_invitations(self, current_user_id: str):
+        invitations = await self.invitation_service.get_received_invitations(current_user_id)
+        return create_response(RESPONSE_STATUS_SUCCESS, "Invitation created successfully", data={"invitations": invitations})
+
+
     async def create_invitation(self, current_user_id: str, invitation: InvitationCreate, study_room_service: StudyRoomService):
         await self.invitation_service.create_invitation(current_user_id, invitation, study_room_service)
         return create_response(RESPONSE_STATUS_SUCCESS, "Invitation created successfully")

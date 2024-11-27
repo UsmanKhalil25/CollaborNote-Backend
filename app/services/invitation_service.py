@@ -32,6 +32,20 @@ class InvitationService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Invalid status"
                 )
+            
+    
+    async def get_received_invitations(self, current_user_id: str):
+        validate_object_id(current_user_id)
+
+        current_user_object_id = convert_to_pydantic_object_id(current_user_id)
+
+        invitations = await Invitation.find(
+            Invitation.invited_user_id == current_user_object_id,
+            Invitation.status == InvitationStatus.PENDING
+        )
+
+        return invitations
+
 
     async def create_invitation(self, current_user_id: str, invitation: InvitationCreate, study_room_service: StudyRoomService):
         validate_object_id(current_user_id)

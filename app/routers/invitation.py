@@ -22,6 +22,15 @@ def get_token_manager()->TokenManager:
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
+async def get_received_invitations(
+    token: TokenData = Depends(get_token_manager().get_current_user),
+    invitation_controller: InvitationController = Depends(get_invitation_controller),
+):
+    current_user_id = token.id
+    return await invitation_controller.get_received_invitations(current_user_id)
+
+
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_invitation(
     invitation: InvitationCreate,
     token: TokenData = Depends(get_token_manager().get_current_user),
