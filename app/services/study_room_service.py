@@ -11,7 +11,7 @@ from app.schemas.study_room import StudyRoomCreate, StudyRoomListingOut, StudyRo
 from app.utils import convert_to_pydantic_object_id, validate_object_id
 
 
-class StudyRoomServices:
+class StudyRoomService:
 
     async def get_study_room_or_404(self, study_room_id: PydanticObjectId) -> StudyRoom:
         study_room_object_id = convert_to_pydantic_object_id(study_room_id)
@@ -44,7 +44,7 @@ class StudyRoomServices:
 
 
     def find_participant(self, study_room: StudyRoom, user_id: PydanticObjectId) -> Participant:
-        participant = self.find_participant_by_user_id(study_room, user_id)
+        participant = self.find_participant_by_user_id(user_id, study_room)
         if not participant:
             raise HTTPException(
                 status_code=403, detail="The given user is not a participant of this study room"
@@ -66,7 +66,7 @@ class StudyRoomServices:
 
 
     def is_user_owner(self, study_room: StudyRoom, user_id: PydanticObjectId) -> bool:
-        participant = self.find_participant_by_user_id(study_room, user_id)
+        participant = self.find_participant_by_user_id(user_id, study_room)
         return participant is not None and participant.is_owner
 
 
@@ -87,7 +87,7 @@ class StudyRoomServices:
 
 
     @staticmethod
-    def find_participant_by_user_id(study_room: StudyRoom, user_id: PydanticObjectId) -> Optional[Participant]:
+    def find_participant_by_user_id(user_id: PydanticObjectId, study_room: StudyRoom) -> Optional[Participant]:
         return next(
             (participant for participant in study_room.participants if participant.user_id == user_id), None
         )
