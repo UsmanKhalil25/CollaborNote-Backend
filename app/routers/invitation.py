@@ -29,5 +29,17 @@ async def create_invitation(
     study_room_service: StudyRoomService = Depends(get_study_room_service)
 
 ):
-    user_id = token.id
-    return await invitation_controller.create_invitation(user_id, invitation, study_room_service)
+    current_user_id = token.id
+    return await invitation_controller.create_invitation(current_user_id, invitation, study_room_service)
+
+
+@router.patch("/{invitation_id}/status")
+async def create_invitation(
+    invitation_id: str,
+    new_status: str,
+    token: TokenData = Depends(get_token_manager().get_current_user),
+    invitation_controller: InvitationController = Depends(get_invitation_controller),
+
+):
+    current_user_id = token.id
+    return await invitation_controller.update_invitation_status(current_user_id, invitation_id, new_status)

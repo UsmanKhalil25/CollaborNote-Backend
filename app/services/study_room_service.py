@@ -14,9 +14,8 @@ from app.utils import convert_to_pydantic_object_id, validate_object_id
 class StudyRoomService:
 
     async def get_study_room_or_404(self, study_room_id: PydanticObjectId) -> StudyRoom:
-        study_room_object_id = convert_to_pydantic_object_id(study_room_id)
 
-        study_room = await StudyRoom.get(study_room_object_id)
+        study_room = await StudyRoom.get(study_room_id)
         if not study_room:
             raise HTTPException(status_code=404, detail="Study room not found")
         return study_room

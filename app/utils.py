@@ -1,11 +1,12 @@
 from copyreg import constructor
+from enum import Enum
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from passlib.context import CryptContext
 from bson import ObjectId
 from beanie import PydanticObjectId
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Type
 from app.constants import RESPONSE_STATUS_ERROR
 
 pwd_context=CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -66,3 +67,15 @@ def convert_to_pydantic_object_id(id: str) -> PydanticObjectId:
 def convert_to_str(id: PydanticObjectId) -> str:
     """Converts a PydanticObject ID to a str."""
     return str(id)
+
+
+
+def validate_enum_status(enum_class: Type[Enum], status_value: str, error_message: str = "Invalid status"):
+
+    upper_case_status = status_value.upper()
+    valid_state = enum_class.__members__.get(upper_case_status)
+    if not valid_state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_message
+        )
