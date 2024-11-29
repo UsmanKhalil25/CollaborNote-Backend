@@ -123,6 +123,17 @@ async def update_participant_permission(
     return await study_room_controller.update_participant_permission(current_user_id, study_room_id, participant_id, permission)
     
 
+@router.get("/{study_room_id}/invitations/search")
+async def search_invitation_by_room(
+    study_room_id: str,
+    query: str,
+    token: TokenData = Depends(get_token_manager().get_current_user),
+    study_room_controller: StudyRoomController = Depends(get_study_room_controller),
+):
+    current_user_id = token.id
+    return await study_room_controller.search_invitation_by_room(current_user_id, study_room_id, query)
+    
+
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,

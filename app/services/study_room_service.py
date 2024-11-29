@@ -4,7 +4,9 @@ from typing import List, Optional
 
 from app.models.user import User
 from app.models.study_room import StudyRoom
+from app.models.invitation import Invitation
 
+from app.schemas.invitation import InvitationStatus
 from app.schemas.participant import Permission, ParticipantCreate, ParticipantOut, Participant
 from app.schemas.study_room import StudyRoomCreate, StudyRoomListingOut, StudyRoomDetailOut, StudyRoomUpdate
 
@@ -318,3 +320,50 @@ class StudyRoomService:
         participant.permission = permission
         await study_room.save()
 
+
+    
+    async def search_invitation_by_room(self, current_user_id: str, study_room_id: str, query: str):
+        validate_object_id(current_user_id)
+        validate_object_id(study_room_id)
+
+        current_user_object_id = convert_to_pydantic_object_id(current_user_id)
+        study_room_object_id = convert_to_pydantic_object_id(study_room_id)
+
+        current_user = await User.get(current_user_object_id)
+        if not current_user:
+            raise ValueError("Current user not found.")
+
+        users = await User.find_many({
+            "email": {"$regex": query, "$options": "i"},
+            "_id": {"$ne": current_user_object_id}
+        }).to_list()
+
+        non_friend_users = [user for user in users if user.id not in current_user.friends]
+
+        study_room = await self.get_study_room_or_404(study_room_object_id)
+
+        results = []
+        for user in non_friend_users:
+            invitation = await Invitation.find_one(
+                Invitation.study_room_id == study_room_object_id,
+                Invitation.invited_user_id == user.id
+            )
+            
+            is_participant = self.is_user_participant(user.id, study_room)
+
+            if invitation:
+                invite_sent = invitation.status != InvitationStatus.PENDING
+            else:
+                invite_sent = False
+
+            results.append({
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "invite_sent": invite_sent,
+                "is_participant": is_participant,
+                "invitation_status": invitation.status if invitation else None
+            })
+        
+        return results   
