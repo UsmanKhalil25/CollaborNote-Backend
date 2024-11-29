@@ -41,6 +41,7 @@ class StudyRoomManager:
 
     async def connect(self,connection:WebSocket,user_id:str):
 
+    
         await connection.accept()
         self.connections[user_id]=connection
 
@@ -79,7 +80,6 @@ class StudyRoomManager:
 
     async def send_message(self, user_id: str, message: dict):
         websocket = self.connections.get(user_id)
-        print(f"websocket ${websocket}")  
         if websocket:
             await websocket.send_json(message)
 
