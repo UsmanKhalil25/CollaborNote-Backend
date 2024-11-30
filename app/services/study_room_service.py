@@ -338,7 +338,7 @@ class StudyRoomService:
             "_id": {"$ne": current_user_object_id}
         }).to_list()
 
-        non_friend_users = [user for user in users if user.id not in current_user.friends]
+        non_friend_users = [user for user in users if user.id in current_user.friends]
 
         study_room = await self.get_study_room_or_404(study_room_object_id)
 

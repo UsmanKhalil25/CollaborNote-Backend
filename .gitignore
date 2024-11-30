@@ -69,3 +69,4 @@ build/
 
 # Gunicorn/Pydantic Logs
 gunicorn.error.log
+.vercel
