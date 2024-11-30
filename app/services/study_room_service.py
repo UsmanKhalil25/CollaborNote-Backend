@@ -282,8 +282,10 @@ class StudyRoomService:
         participant = self.find_participant(study_room, participant_object_id)
         current_user_participant = self.find_participant(study_room, current_user_object_id)
 
+        print(current_user_object_id)
+        print(participant_id)
         if not (
-            current_user_participant.is_owner or current_user_object_id == participant_id
+            current_user_participant.is_owner or current_user_object_id == current_user_participant.user_id
         ):
             raise HTTPException(
                 status_code=403,
