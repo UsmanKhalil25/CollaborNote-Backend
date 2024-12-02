@@ -58,7 +58,7 @@ class InvitationService:
                 first_name = inviter_user.first_name,
                 last_name = inviter_user.last_name 
             )
-
+            
             study_room = await study_room_service.get_study_room_or_404(invitation.study_room_id)
 
             participants_out = [

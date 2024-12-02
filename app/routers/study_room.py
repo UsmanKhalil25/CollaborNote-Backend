@@ -151,22 +151,12 @@ async def websocket_endpoint(
             message = await websocket.receive_text()
             data = json.loads(message)
 
-            if data["type"] == "offer" or data["type"] == "answer" or data["type"] == "ice-candidate":
-                target_user_id = data.get("target_user_id")
-                if target_user_id:
-                    await study_room_manager.send_message(
-                        target_user_id,
-                        message={
-                            "type": data["type"],
-                            "data": data["data"],
-                            "sender_id": current_user_id,
-                        }
-                    )
-            elif data["type"] == "document_update":
+            if data["type"] == "document_update":
                 study_room_id = data["data"]["study_room_id"]
                 study_room = await StudyRoom.get(
                     convert_to_pydantic_object_id(study_room_id)
                 )
+
                 for participant in study_room.participants:
                     if participant.is_active and participant.user_id != convert_to_pydantic_object_id(current_user_id):
                         message = {
@@ -177,24 +167,16 @@ async def websocket_endpoint(
                                 "content": data["data"]["content"],
                             },
                         }
+
                         await study_room_manager.send_message(
                             convert_to_str(participant.user_id),
                             message=message
                         )
-            elif data["type"] == "invitation":
-                invited_user_id = data["data"]["invited_user_id"]
-                await study_room_manager.send_message(
-                    invited_user_id,
-                    {
-                        "type": "invitation",
-                        "data": {
-                            "study_room_id": data["data"]["study_room_id"],
-                            "inviter_id": current_user_id,
-                        },
-                    }
-                )
-    except Exception as e:
-        print(e)
-    finally:
-        await study_room_manager.disconnect(current_user_id)
 
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        if current_user_id in study_room_manager.connections:
+            await study_room_manager.disconnect(current_user_id)
+        else:
+            print(f"Warning: user {current_user_id} was not found in the connections.")
