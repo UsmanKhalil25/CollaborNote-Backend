@@ -173,6 +173,26 @@ async def websocket_endpoint(
                             message=message
                         )
 
+            elif data["type"] == "room_end":
+                study_room_id = data["data"]["study_room_id"]
+                study_room = await StudyRoom.get(
+                    convert_to_pydantic_object_id(study_room_id)
+                )
+                for participant in study_room.participants:
+                    if participant.is_active and participant.user_id != convert_to_pydantic_object_id(current_user_id):
+                        message = {
+                            "type": "room_end",
+                            "data": {
+                                "study_room_id": study_room_id,
+                                "message": "The study session has ended.",
+                            },
+                        }
+
+                        await study_room_manager.send_message(
+                            convert_to_str(participant.user_id),
+                            message=message
+                        )
+
     except Exception as e:
         print(f"Error: {e}")
     finally:

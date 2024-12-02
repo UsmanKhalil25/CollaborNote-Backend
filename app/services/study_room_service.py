@@ -217,8 +217,6 @@ class StudyRoomService:
         self.ensure_user_is_participant(current_user_object_id, study_room)
         self.ensure_user_is_owner(current_user_object_id, study_room)
 
-        for participant in study_room.participants:
-            participant.is_active = False
         study_room.is_active = False
 
         await study_room.save()
@@ -275,15 +273,12 @@ class StudyRoomService:
 
         study_room = await self.get_study_room_or_404(study_room_object_id)
 
-        self.ensure_study_room_is_active(study_room)
         self.ensure_user_is_participant(current_user_object_id, study_room)
         self.ensure_user_is_participant(participant_object_id, study_room)
 
         participant = self.find_participant(study_room, participant_object_id)
         current_user_participant = self.find_participant(study_room, current_user_object_id)
 
-        print(current_user_object_id)
-        print(participant_id)
         if not (
             current_user_participant.is_owner or current_user_object_id == current_user_participant.user_id
         ):
