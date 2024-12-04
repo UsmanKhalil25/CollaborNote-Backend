@@ -1,0 +1,6 @@
+projectKey=CollaborNote-Backend
+serverUrl=http://localhost:9001
+serverVersion=9.9.8.100196
+dashboardUrl=http://localhost:9001/dashboard?id=CollaborNote-Backend
+ceTaskId=AZOPzIcpxcIe_IaVWDYX
+ceTaskUrl=http://localhost:9001/api/ce/task?id=AZOPzIcpxcIe_IaVWDYX

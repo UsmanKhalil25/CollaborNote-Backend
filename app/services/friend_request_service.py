@@ -169,8 +169,6 @@ class FriendRequestService:
         friend_request.responded_at = datetime.now()
 
         if valid_state == FriendRequestStatus.ACCEPTED:
-            # TODO: Add notification logic
-            # doing this to remove any other mutual request between the users
             existing_request = await FriendRequest.find_one(
                 FriendRequest.receiver_id == friend_request.sender_id,
                 FriendRequest.sender_id == friend_request.receiver_id,

@@ -9,19 +9,15 @@ from app.models.invitation import Invitation
 from app.config.setting import settings
 
 async def db_lifespan(app: FastAPI):
-    # Startup
     app.mongodb_client = AsyncIOMotorClient(settings.mongo_db_url)
     app.database = app.mongodb_client["collaborNote_db"] 
 
     await init_beanie(database=app.database, document_models=[User, BlackListToken, FriendRequest, StudyRoom, Invitation])
 
-    # Check if MongoDB is available
     ping_response = await app.database.command("ping")
     if int(ping_response["ok"]) != 1:
-        raise Exception("Problem connecting to database cluster.")
+        raise ConnectionError("Unable to connect to the MongoDB cluster. Please check your database connection settings.")
 
     yield
 
-    # Shutdown
     app.mongodb_client.close()
-

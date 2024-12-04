@@ -5,4 +5,4 @@ class BlackListToken(Document):
     token:str
 
     class Settings:
-        Collection='blacklist-tokens'
+        collection='blacklist_tokens'

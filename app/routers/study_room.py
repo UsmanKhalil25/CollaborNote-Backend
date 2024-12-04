@@ -137,7 +137,7 @@ async def search_invitation_by_room(
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    study_room_manager: StudyRoomManager = Depends(get_study_room_manager)
+    study_room_manager: StudyRoomManager = Depends(get_study_room_manager),
 ):
     current_user_id = websocket.query_params.get("user_id")
     if not current_user_id:
@@ -146,53 +146,46 @@ async def websocket_endpoint(
 
     await study_room_manager.connect(websocket, current_user_id)
 
+    async def handle_document_update(data):
+        study_room_id = data["data"]["study_room_id"]
+        study_room = await StudyRoom.get(convert_to_pydantic_object_id(study_room_id))
+        message = {
+            "type": "document_update",
+            "data": {
+                "editor_id": current_user_id,
+                "study_room_id": study_room_id,
+                "content": data["data"]["content"],
+            },
+        }
+        await notify_participants(study_room, current_user_id, message)
+
+    async def handle_room_end(data):
+        study_room_id = data["data"]["study_room_id"]
+        study_room = await StudyRoom.get(convert_to_pydantic_object_id(study_room_id))
+        message = {
+            "type": "room_end",
+            "data": {
+                "study_room_id": study_room_id,
+                "message": "The study session has ended.",
+            },
+        }
+        await notify_participants(study_room, current_user_id, message)
+
+    async def notify_participants(study_room, editor_id, message):
+        for participant in study_room.participants:
+            if participant.is_active and participant.user_id != convert_to_pydantic_object_id(editor_id):
+                await study_room_manager.send_message(
+                    convert_to_str(participant.user_id), message=message
+                )
+
     try:
         while True:
             message = await websocket.receive_text()
             data = json.loads(message)
-
             if data["type"] == "document_update":
-                study_room_id = data["data"]["study_room_id"]
-                study_room = await StudyRoom.get(
-                    convert_to_pydantic_object_id(study_room_id)
-                )
-
-                for participant in study_room.participants:
-                    if participant.is_active and participant.user_id != convert_to_pydantic_object_id(current_user_id):
-                        message = {
-                            "type": "document_update",
-                            "data": {
-                                "editor_id": current_user_id,
-                                "study_room_id": study_room_id,
-                                "content": data["data"]["content"],
-                            },
-                        }
-
-                        await study_room_manager.send_message(
-                            convert_to_str(participant.user_id),
-                            message=message
-                        )
-
+                await handle_document_update(data)
             elif data["type"] == "room_end":
-                study_room_id = data["data"]["study_room_id"]
-                study_room = await StudyRoom.get(
-                    convert_to_pydantic_object_id(study_room_id)
-                )
-                for participant in study_room.participants:
-                    if participant.is_active and participant.user_id != convert_to_pydantic_object_id(current_user_id):
-                        message = {
-                            "type": "room_end",
-                            "data": {
-                                "study_room_id": study_room_id,
-                                "message": "The study session has ended.",
-                            },
-                        }
-
-                        await study_room_manager.send_message(
-                            convert_to_str(participant.user_id),
-                            message=message
-                        )
-
+                await handle_room_end(data)
     except Exception as e:
         print(f"Error: {e}")
     finally:

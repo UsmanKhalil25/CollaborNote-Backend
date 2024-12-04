@@ -12,6 +12,8 @@ from app.schemas.study_room import StudyRoomCreate, StudyRoomListingOut, StudyRo
 
 from app.utils import convert_to_pydantic_object_id, validate_object_id
 
+PARTICIPANTS_USER_ID_FIELD = "participants.user_id"
+
 
 class StudyRoomService:
 
@@ -56,7 +58,7 @@ class StudyRoomService:
     @staticmethod
     async def is_user_in_active_room(user_id: PydanticObjectId) -> bool:
         existing_room = await StudyRoom.find_one(
-            {"participants.user_id": user_id, "is_active": True}
+            {PARTICIPANTS_USER_ID_FIELD: user_id, "is_active": True}
         )
         return existing_room is not None
 
@@ -72,7 +74,7 @@ class StudyRoomService:
 
 
     @staticmethod
-    async def map_participant_to_out(participant: Participant) -> ParticipantOut:
+    async def map_participant_to_out(participant: Participant) -> ParticipantOut | None:
         user = await User.get(participant.user_id)
         if user:
             return ParticipantOut(
@@ -139,7 +141,7 @@ class StudyRoomService:
         validate_object_id(current_user_id)
 
         current_user_object_id = convert_to_pydantic_object_id(current_user_id)
-        rooms = await StudyRoom.find({"participants.user_id": current_user_object_id}).to_list()
+        rooms = await StudyRoom.find({PARTICIPANTS_USER_ID_FIELD: current_user_object_id}).to_list()
 
         study_rooms_with_participants = []
         for room in rooms:
@@ -163,11 +165,9 @@ class StudyRoomService:
         validate_object_id(current_user_id)
         validate_object_id(study_room_id)
 
-        current_user_object_id = convert_to_pydantic_object_id(current_user_id)
         study_room_object_id = convert_to_pydantic_object_id(study_room_id)
 
         study_room = await self.get_study_room_or_404(study_room_object_id)
-        self.ensure_user_is_participant(current_user_object_id, study_room)
 
         participants_out = [
             await self.map_participant_to_out(participant) for participant in study_room.participants if participant
@@ -216,7 +216,9 @@ class StudyRoomService:
         self.ensure_study_room_is_active(study_room)
         self.ensure_user_is_participant(current_user_object_id, study_room)
         self.ensure_user_is_owner(current_user_object_id, study_room)
+        current_user_participant = self.find_participant(study_room, current_user_object_id)
 
+        current_user_participant.is_active = False
         study_room.is_active = False
 
         await study_room.save()
@@ -234,7 +236,7 @@ class StudyRoomService:
 
         is_participant_in_other_room = await StudyRoom.find_one(
             {
-                "participants.user_id": current_user_object_id, 
+                PARTICIPANTS_USER_ID_FIELD: current_user_object_id, 
                 "is_active": True,
                 "_id": {"$ne": study_room_object_id}  
             }
