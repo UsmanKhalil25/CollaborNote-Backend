@@ -3,7 +3,9 @@ from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
+
 from src.schemas.token import TokenData
+from src.documents.blacklist_token_document import BlackListToken
 from src.config.settings import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -48,8 +50,8 @@ class TokenManager:
         expires_delta = timedelta(days=self.refresh_token_expire_days)
         return self._create_token(data, expires_delta)
 
-    def get_current_user(self, token: str = Depends(oauth2_scheme)) -> TokenData:
-        """Extract and verify the user ID from the access token."""
+    async def verify_token(self, token: str = Depends(oauth2_scheme)) -> TokenData:
+        """Extract and verify the user ID from the access token and check if it is blacklisted."""
         user_id = self._decode_token(token)
         if not user_id:
             raise HTTPException(
@@ -57,15 +59,13 @@ class TokenManager:
                 detail="Invalid or expired access token.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return TokenData(id=user_id)
 
-    def verify_token(self, token: str = Depends(oauth2_scheme)) -> TokenData:
-        """Extract and verify the user ID from the access token."""
-        user_id = self._decode_token(token)
-        if not user_id:
+        blacklisted_token = await BlackListToken.find_one({"token": token})
+        if blacklisted_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired access token.",
+                detail="Token has been blacklisted.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return TokenData(user_id=user_id)
+
+        return TokenData(user_id=user_id), token

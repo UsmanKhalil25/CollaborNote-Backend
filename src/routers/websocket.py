@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from src.auth.token_manager import TokenManager
+from src.services.token_manager import TokenManager
 import json
 from typing import Dict
 

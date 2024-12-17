@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from typing import Optional
 from src.schemas.token import TokenData
-from src.auth.token_manager import TokenManager
+from src.services.token_manager import TokenManager
 from src.services.user_service import UserService
 from src.controllers.friend_request_controller import FriendRequestController
 
@@ -23,7 +23,7 @@ def get_token_manager() -> TokenManager:
 @router.get("")
 async def get_received_friend_requests(
     status: Optional[str] = None,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     friend_request_controller: FriendRequestController = Depends(
         get_friend_request_controller
     ),
@@ -38,7 +38,7 @@ async def get_received_friend_requests(
 @router.post("/send/{to_user_id}", status_code=status.HTTP_201_CREATED)
 async def send_friend_request(
     to_user_id: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     friend_request_controller: FriendRequestController = Depends(
         get_friend_request_controller
     ),
@@ -54,7 +54,7 @@ async def send_friend_request(
 async def update_friend_request_status(
     request_id: str,
     new_status: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     friend_request_controller: FriendRequestController = Depends(
         get_friend_request_controller
     ),

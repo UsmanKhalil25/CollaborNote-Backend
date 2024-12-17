@@ -1,13 +1,17 @@
 from fastapi import HTTPException, status, Response
-from src.documents.blacklist_token import BlackListToken
-from src.documents.user_document import UserDocument
-from src.schemas.user import UserCreate, UserLogin
+
+from src.repositories.user_repository import UserRepository
+from src.documents.blacklist_token_document import BlackListToken
+from src.schemas.user import UserRegister, UserLogin
 from src.utils import hash_password, verify_password
-from src.services.user_service import UserService
-from src.auth.token_manager import TokenManager
+from src.services.token_manager import TokenManager
 
 
 class AuthService:
+
+    def __init__(self):
+        self.user_repository = UserRepository()
+
     @staticmethod
     def _set_refresh_token(response: Response, token: str):
         response.set_cookie(
@@ -18,37 +22,31 @@ class AuthService:
             samesite="strict",
         )
 
-    @staticmethod
-    async def register(user: UserCreate, user_service: UserService) -> None:
+    async def register(self, user_data: UserRegister) -> None:
         """Register a new user, ensuring the email is unique."""
-        existing_user = await user_service.get_user_by_email(user.email)
+        existing_user = await self.user_repository.get_by_email(user_data.email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
             )
 
-        hashed_password = hash_password(password=user.password)
+        hashed_password = hash_password(password=user_data.password)
+        user_dict = user_data.model_dump()
+        user_dict["password"] = hashed_password
 
-        new_user = UserDocument(
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            password=hashed_password,
-        )
-        await new_user.insert()
+        await self.user_repository.create(user_data=user_dict)
 
     async def login(
         self,
+        user_data: UserLogin,
         response: Response,
-        user_login: UserLogin,
-        user_service: UserService,
         token_manager: TokenManager,
-    ) -> dict:
+    ) -> str:
         """Authenticate user and return access token while setting refresh token as HttpOnly cookie."""
-        existing_user = await user_service.get_user_by_email(user_login.email)
+        existing_user = await self.user_repository.get_by_email(user_data.email)
         if not existing_user or not verify_password(
-            plain_password=user_login.password, hashed_password=existing_user.password
+            plain_password=user_data.password, hashed_password=existing_user.password
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials"
@@ -65,18 +63,6 @@ class AuthService:
 
         return access_token
 
-    @staticmethod
-    async def blacklist_token(token: str) -> None:
-        """Blacklist the token for logout."""
-
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Token missing or malformed",
-            )
-        token = BlackListToken(token=token)
-        await token.insert()
-
     async def refresh_token(
         self, response: Response, token_manager: TokenManager
     ) -> str:
@@ -89,7 +75,7 @@ class AuthService:
                 detail="Refresh token is missing",
             )
 
-        user_id = token_manager.verify_refresh_token(refresh_token)
+        user_id = token_manager.verify_token(refresh_token)
 
         if not user_id:
             raise HTTPException(
@@ -105,3 +91,15 @@ class AuthService:
         self._set_refresh_token(response, new_refresh_token)
 
         return new_access_token
+
+    @staticmethod
+    async def blacklist_token(token: str) -> None:
+        """Blacklist the token for logout."""
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token missing or malformed",
+            )
+        token = BlackListToken(token=token)
+        await token.insert()

@@ -1,41 +1,40 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
 
-from src.documents.user_document import UserDocument
-from src.schemas.user import UserCreate, UserUpdate
+from src.documents.user_document import User
+from src.schemas.user import UserUpdate
 
 
 class UserRepository:
     @staticmethod
-    async def search_by_query(query: dict) -> List[UserDocument]:
+    async def search_by_query(query: dict) -> List[User]:
         """Search for users based on a query dictionary."""
 
-        users = await UserDocument.find(query).to_list()
+        users = await User.find(query).to_list()
         return users
 
     @staticmethod
-    async def get_by_email(email: str) -> Optional[UserDocument]:
+    async def get_by_email(email: str) -> Optional[User]:
         """Retrieve a user document by their email address."""
 
-        return await UserDocument.find_one(email=email)
+        return await User.find_one(User.email == email)
 
     @staticmethod
-    async def get_by_id(id: PydanticObjectId) -> Optional[UserDocument]:
+    async def get_by_id(id: PydanticObjectId) -> Optional[User]:
         """Retrieve a user document by their ID."""
 
-        return await UserDocument.get(id)
+        return await User.get(id)
 
     @staticmethod
-    async def create(user_data: UserCreate):
+    async def create(user_data: dict) -> User:
         """Create a new user document and save it to the database."""
-
-        user = UserDocument(**user_data.model_dump())
-        await user.save()
+        user = User(**user_data)
+        await user.insert()
         return user
 
     async def update(
         self, id: PydanticObjectId, user_data: UserUpdate
-    ) -> Optional[UserDocument]:
+    ) -> Optional[User]:
         """Update an existing user document with new data."""
         user = await self.get_by_id(id)
 

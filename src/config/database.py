@@ -1,9 +1,9 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from fastapi import FastAPI
-from src.documents.blacklist_token import BlackListToken
+from src.documents.blacklist_token_document import BlackListToken
 from src.documents.study_room import StudyRoom
-from src.documents.user_document import UserDocument
+from src.documents.user_document import User
 from src.documents.friend_request import FriendRequest
 from src.documents.invitation import Invitation
 from src.config.settings import settings
@@ -16,7 +16,7 @@ async def db_lifespan(app: FastAPI):
     await init_beanie(
         database=app.database,
         document_models=[
-            UserDocument,
+            User,
             BlackListToken,
             FriendRequest,
             StudyRoom,

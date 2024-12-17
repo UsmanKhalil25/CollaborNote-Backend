@@ -1,7 +1,7 @@
-from beanie import Document
+from .base_document import BaseDocument
 
 
-class BlackListToken(Document):
+class BlackListToken(BaseDocument):
     token: str
 
     class Settings:

@@ -4,7 +4,7 @@ from pydantic import EmailStr
 from .base_document import BaseDocument
 
 
-class UserDocument(BaseDocument):
+class User(BaseDocument):
     email: EmailStr = Annotated[EmailStr, Indexed(unique=True, text=True)]
     first_name: str
     last_name: str

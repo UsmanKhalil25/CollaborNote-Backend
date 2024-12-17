@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config.database import db_lifespan
 from src.config.settings import settings
 from src.routers import (
-    auth,
+    auth_router,
     user_router,
     friend_requests,
     study_room,
@@ -34,7 +34,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 api_router = APIRouter(prefix="/api")
 
-api_router.include_router(auth.router)
+api_router.include_router(auth_router.router)
 api_router.include_router(user_router.router)
 api_router.include_router(friend_requests.router)
 api_router.include_router(study_room.router)

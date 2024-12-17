@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from typing import List, Optional
 from src.documents.friend_request import FriendRequest, FriendRequestStatus
-from src.documents.user_document import UserDocument
+from src.documents.user_document import User
 from src.services.user_service import UserService
 from src.utils import validate_object_id, convert_to_pydantic_object_id
 
@@ -37,7 +37,7 @@ class FriendRequestService:
 
         requests_with_senders = []
         for friend_request in received_requests:
-            sender_user = await UserDocument.get(friend_request.sender_id)
+            sender_user = await User.get(friend_request.sender_id)
             if sender_user:
                 friend_request_data = {
                     "_id": str(friend_request.id),

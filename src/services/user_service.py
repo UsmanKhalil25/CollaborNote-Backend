@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from typing import List
 
 from src.documents.friend_request import FriendRequestStatus
-from src.documents.user_document import UserDocument
+from src.documents.user_document import User
 from src.repositories.user_repository import UserRepository
 from src.repositories.friend_request_repository import FriendRequestRepository
 from src.schemas.user import UserSearch
@@ -15,7 +15,7 @@ class UserService:
         self.user_repository = UserRepository()
         self.friend_request_repository = FriendRequestRepository()
 
-    async def get_valid_user(self, user_id: str) -> UserDocument:
+    async def get_valid_user(self, user_id: str) -> User:
         """Fetch and validate a user by ID."""
         validate_object_id(user_id)
         user_object_id = convert_to_pydantic_object_id(user_id)
@@ -69,8 +69,8 @@ class UserService:
             for user in users
         ]
 
-    async def get_user_friends(self, user_id: str) -> List[UserDocument]:
-        """Fetch a list of friends for a given UserDocument."""
+    async def get_user_friends(self, user_id: str) -> List[User]:
+        """Fetch a list of friends for a given User."""
         current_user = await self.get_valid_user(user_id)
 
         if not current_user.friends:
@@ -80,7 +80,7 @@ class UserService:
         return await self.user_repository.search_by_query(FRIENDS_QUERY)
 
     @staticmethod
-    async def update_friendship(user: UserDocument, friend: UserDocument, add: bool):
+    async def update_friendship(user: User, friend: User, add: bool):
         """Add or remove a friend."""
         if add:
             user.friends.append(friend.id)

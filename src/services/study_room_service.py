@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from beanie import PydanticObjectId
 from typing import List, Optional
 
-from src.documents.user_document import UserDocument
+from src.documents.user_document import User
 from src.documents.study_room import StudyRoom
 from src.documents.invitation import Invitation
 
@@ -84,7 +84,7 @@ class StudyRoomService:
 
     @staticmethod
     async def map_participant_to_out(participant: Participant) -> ParticipantOut | None:
-        user = await UserDocument.get(participant.user_id)
+        user = await User.get(participant.user_id)
         if user:
             return ParticipantOut(
                 user_id=participant.user_id,
@@ -367,11 +367,11 @@ class StudyRoomService:
         current_user_object_id = convert_to_pydantic_object_id(current_user_id)
         study_room_object_id = convert_to_pydantic_object_id(study_room_id)
 
-        current_user = await UserDocument.get(current_user_object_id)
+        current_user = await User.get(current_user_object_id)
         if not current_user:
             raise ValueError("Current user not found.")
 
-        users = await UserDocument.find_many(
+        users = await User.find_many(
             {
                 "email": {"$regex": query, "$options": "i"},
                 "_id": {"$ne": current_user_object_id},

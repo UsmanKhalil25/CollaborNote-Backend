@@ -8,7 +8,7 @@ from src.schemas.participant import Permission
 from src.utils import convert_to_pydantic_object_id, convert_to_str
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
-from src.auth.token_manager import TokenManager
+from src.services.token_manager import TokenManager
 
 from src.controllers.study_room_controller import StudyRoomController
 
@@ -37,7 +37,7 @@ def get_study_room_manager() -> StudyRoomManager:
 @router.post("")
 async def create_study_room(
     study_room_info: StudyRoomCreate,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -48,7 +48,7 @@ async def create_study_room(
 
 @router.get("")
 async def list_study_rooms(
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -58,7 +58,7 @@ async def list_study_rooms(
 @router.get("/{study_room_id}")
 async def retrieve_study_room(
     study_room_id: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -71,7 +71,7 @@ async def retrieve_study_room(
 async def update_study_room(
     study_room_id: str,
     study_room_data: StudyRoomUpdate,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -83,7 +83,7 @@ async def update_study_room(
 @router.patch("/{study_room_id}/end")
 async def end_study_room(
     study_room_id: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -93,7 +93,7 @@ async def end_study_room(
 @router.post("/{study_room_id}/participants")
 async def add_participant(
     study_room_id: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -104,7 +104,7 @@ async def add_participant(
 async def remove_participant(
     study_room_id: str,
     participant_id: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -118,7 +118,7 @@ async def update_participant_permission(
     study_room_id: str,
     participant_id: str,
     permission: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
@@ -131,7 +131,7 @@ async def update_participant_permission(
 async def search_invitation_by_room(
     study_room_id: str,
     query: str,
-    token: TokenData = Depends(get_token_manager().get_current_user),
+    token: TokenData = Depends(get_token_manager().verify_token),
     study_room_controller: StudyRoomController = Depends(get_study_room_controller),
 ):
     current_user_id = token.id
