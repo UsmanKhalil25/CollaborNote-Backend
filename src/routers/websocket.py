@@ -36,7 +36,7 @@ manager = ConnectionManager()
 
 @router.websocket("")
 async def websocket_endpoint(
-    websocket: WebSocket, token: str = Depends(get_token_manager()._verify_token)
+    websocket: WebSocket, token: str = Depends(get_token_manager()._decode_token)
 ):
     user_id = token
     if not user_id:

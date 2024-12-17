@@ -12,7 +12,6 @@ from src.routers import (
     invitation,
     websocket,
 )
-
 from src.utils import http_exception_handler, validation_exception_handler
 
 

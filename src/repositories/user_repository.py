@@ -1,31 +1,17 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from beanie import PydanticObjectId
+
 from src.documents.user_document import UserDocument
 from src.schemas.user import UserCreate, UserUpdate
 
 
 class UserRepository:
     @staticmethod
-    async def _ensure_user_exists(id: PydanticObjectId) -> Tuple[Optional[UserDocument], Optional[Exception]] :
-        """Ensure a user exists in the database by checking their ID."""
-
-        user = await UserDocument(id=id)
-        if not user:
-            return None, ValueError(f"User with id {id} does not exist.")
-        return user, None
-
-    @staticmethod
     async def search_by_query(query: dict) -> List[UserDocument]:
         """Search for users based on a query dictionary."""
 
-        users = await UserDocument.find_many(query).to_list()
+        users = await UserDocument.find(query).to_list()
         return users
-
-    @staticmethod
-    async def get_all() -> List[UserDocument]:
-        """Retrieve all user documents from the database."""
-
-        return await UserDocument.all()
 
     @staticmethod
     async def get_by_email(email: str) -> Optional[UserDocument]:
@@ -49,24 +35,21 @@ class UserRepository:
 
     async def update(
         self, id: PydanticObjectId, user_data: UserUpdate
-    ) -> Tuple[Optional[UserDocument] | Optional[Exception]]:
+    ) -> Optional[UserDocument]:
         """Update an existing user document with new data."""
+        user = await self.get_by_id(id)
 
-        user, error = await self._ensure_user_exists(id)
-        if error:
-            return None, error
-        
         for field, value in user_data.model_dump().items():
             if value is not None:
                 setattr(user, field, value)
         await user.save()
-        return user, error
+        return user
 
     async def delete(self, id: PydanticObjectId) -> Optional[Exception]:
         """Delete a user document by their ID."""
 
-        user, error = await self._ensure_user_exists(id)
+        user, error = await self.ensure_user_exists(id)
         if error:
             return error
-        
+
         await user.delete()
