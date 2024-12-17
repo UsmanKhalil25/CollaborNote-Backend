@@ -5,7 +5,7 @@ from src.documents.friend_request import FriendRequestStatus
 from src.documents.user_document import User
 from src.repositories.user_repository import UserRepository
 from src.repositories.friend_request_repository import FriendRequestRepository
-from src.schemas.user import UserSearch
+from src.schemas.user import UserSearch, UserInfo
 from src.utils import validate_object_id, convert_to_pydantic_object_id
 
 
@@ -69,15 +69,26 @@ class UserService:
             for user in users
         ]
 
-    async def get_user_friends(self, user_id: str) -> List[User]:
-        """Fetch a list of friends for a given User."""
+    async def get_user_friends(self, user_id: str) -> List[dict]:
+        """Fetch a list of friends for a given User and return selected fields."""
         current_user = await self.get_valid_user(user_id)
 
         if not current_user.friends:
             return []
 
         FRIENDS_QUERY = {"_id": {"$in": current_user.friends}}
-        return await self.user_repository.search_by_query(FRIENDS_QUERY)
+
+        friends = await self.user_repository.search_by_query(FRIENDS_QUERY)
+
+        return [
+            UserInfo(
+                id=str(friend.id),
+                email=friend.email,
+                first_name=friend.first_name,
+                last_name=friend.last_name,
+            )
+            for friend in friends
+        ]
 
     @staticmethod
     async def update_friendship(user: User, friend: User, add: bool):

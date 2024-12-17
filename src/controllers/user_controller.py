@@ -18,7 +18,7 @@ class UserController:
 
     async def get_current_user(self, token: TokenData):
         user_id = token.user_id
-        current_user = await self.user_service.get_current_user(user_id=user_id)
+        current_user = await self.user_service.get_valid_user(user_id=user_id)
         return create_response(
             RESPONSE_STATUS_SUCCESS,
             "Current user fetched successfully",

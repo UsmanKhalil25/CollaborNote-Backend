@@ -29,7 +29,7 @@ class UserRepository:
     async def create(user_data: dict) -> User:
         """Create a new user document and save it to the database."""
         user = User(**user_data)
-        await user.insert()
+        await user.create()
         return user
 
     async def update(

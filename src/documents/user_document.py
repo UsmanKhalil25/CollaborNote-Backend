@@ -9,9 +9,9 @@ class User(BaseDocument):
     first_name: str
     last_name: str
     password: str
-    friends: Optional[List[PydanticObjectId]] = None
-    friend_requests_sent: Optional[List[PydanticObjectId]] = None
-    friend_requests_received: Optional[List[PydanticObjectId]] = None
+    friends: List[PydanticObjectId] = []
+    friend_requests_sent: List[PydanticObjectId] = []
+    friend_requests_received: List[PydanticObjectId] = []
 
     class Settings:
         collection = "users"
