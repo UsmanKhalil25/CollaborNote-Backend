@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import List
 
-from src.documents.friend_request import FriendRequestStatus
+from src.documents.friend_request_document import FriendRequestStatus
 from src.documents.user_document import User
 from src.repositories.user_repository import UserRepository
 from src.repositories.friend_request_repository import FriendRequestRepository
@@ -17,6 +17,7 @@ class UserService:
 
     async def get_valid_user(self, user_id: str) -> User:
         """Fetch and validate a user by ID."""
+
         validate_object_id(user_id)
         user_object_id = convert_to_pydantic_object_id(user_id)
 
@@ -28,8 +29,20 @@ class UserService:
             )
         return user
 
+    async def get_current_user(self, user_id: str) -> UserInfo:
+        """Retrieve the current user's details."""
+
+        user = await self.get_valid_user(user_id=user_id)
+        return UserInfo(
+            id=str(user.id),
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+        )
+
     async def search_users(self, query: str, user_id: str) -> List[UserSearch]:
         """Fetch users by search query and include if they are friends and request status."""
+
         current_user = await self.get_valid_user(user_id)
 
         USER_SEARCH_QUERY = {
@@ -71,6 +84,7 @@ class UserService:
 
     async def get_user_friends(self, user_id: str) -> List[dict]:
         """Fetch a list of friends for a given User and return selected fields."""
+
         current_user = await self.get_valid_user(user_id)
 
         if not current_user.friends:
@@ -93,6 +107,7 @@ class UserService:
     @staticmethod
     async def update_friendship(user: User, friend: User, add: bool):
         """Add or remove a friend."""
+
         if add:
             user.friends.append(friend.id)
             friend.friends.append(user.id)
@@ -105,6 +120,7 @@ class UserService:
 
     async def modify_friend(self, user_id: str, friend_id: str, add: bool):
         """Generalized method for adding or removing a friend."""
+
         action = "add" if add else "remove"
         if user_id == friend_id:
             raise HTTPException(
@@ -131,8 +147,10 @@ class UserService:
 
     async def add_friend(self, user_id: str, friend_id: str):
         """Add a friend to the user's friend list."""
+
         await self.modify_friend(user_id, friend_id, add=True)
 
     async def remove_friend(self, user_id: str, friend_id: str):
         """Remove a friend from the user's friend list."""
+
         await self.modify_friend(user_id, friend_id, add=False)

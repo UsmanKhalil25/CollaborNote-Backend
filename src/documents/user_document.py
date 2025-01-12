@@ -1,4 +1,4 @@
-from typing import List, Optional, Annotated
+from typing import List, Annotated
 from beanie import PydanticObjectId, Indexed
 from pydantic import EmailStr
 from .base_document import BaseDocument

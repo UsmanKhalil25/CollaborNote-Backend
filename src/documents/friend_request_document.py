@@ -1,7 +1,7 @@
-from beanie import PydanticObjectId, Document
-from datetime import datetime
-from typing import Optional
+from beanie import PydanticObjectId
 from enum import Enum
+
+from .base_document import BaseDocument
 
 
 class FriendRequestStatus(Enum):
@@ -10,12 +10,10 @@ class FriendRequestStatus(Enum):
     REJECTED = "rejected"
 
 
-class FriendRequest(Document):
+class FriendRequest(BaseDocument):
     sender_id: PydanticObjectId
     receiver_id: PydanticObjectId
     status: FriendRequestStatus = FriendRequestStatus.PENDING
-    created_at: datetime = datetime.now()
-    responded_at: Optional[datetime] = None
 
     class Settings:
         collection = "friend_requests"

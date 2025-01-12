@@ -5,11 +5,14 @@ from src.constants import RESPONSE_STATUS_SUCCESS
 
 
 class UserController:
+    """Controller for handling user-related operations."""
 
     def __init__(self):
         self.user_service = UserService()
 
     async def search_users(self, query: str, token: TokenData):
+        """Search for users based on a query."""
+
         user_id = token.user_id
         users = await self.user_service.search_users(query=query, user_id=user_id)
         return create_response(
@@ -17,8 +20,10 @@ class UserController:
         )
 
     async def get_current_user(self, token: TokenData):
+        """Fetch the currently authenticated user."""
+
         user_id = token.user_id
-        current_user = await self.user_service.get_valid_user(user_id=user_id)
+        current_user = await self.user_service.get_current_user(user_id=user_id)
         return create_response(
             RESPONSE_STATUS_SUCCESS,
             "Current user fetched successfully",
@@ -26,6 +31,8 @@ class UserController:
         )
 
     async def get_user_friends(self, token: TokenData):
+        """Fetch the list of friends for the authenticated user."""
+
         user_id = token.user_id
         friends = await self.user_service.get_user_friends(user_id=user_id)
         return create_response(
@@ -35,11 +42,15 @@ class UserController:
         )
 
     async def add_friend(self, friend_id: str, token: TokenData):
+        """Add a new friend for the authenticated user."""
+
         user_id = token.user_id
         await self.user_service.add_friend(friend_id=friend_id, user_id=user_id)
         return create_response(RESPONSE_STATUS_SUCCESS, "Friend successfully added")
 
     async def remove_friend(self, friend_id: str, token: TokenData):
+        """Remove a friend from the authenticated user's list."""
+
         user_id = token.user_id
         await self.user_service.remove_friend(friend_id=friend_id, user_id=user_id)
         return create_response(RESPONSE_STATUS_SUCCESS, "Friend successfully removed")

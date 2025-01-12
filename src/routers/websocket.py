@@ -1,13 +1,13 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from src.services.token_manager import TokenManager
+from src.services.token_service import TokenService
 import json
 from typing import Dict
 
 router = APIRouter(prefix="/ws", tags=["Web Socket"])
 
 
-def get_token_manager() -> TokenManager:
-    return TokenManager()
+def get_token_service() -> TokenService:
+    return TokenService()
 
 
 class ConnectionManager:
@@ -36,7 +36,7 @@ manager = ConnectionManager()
 
 @router.websocket("")
 async def websocket_endpoint(
-    websocket: WebSocket, token: str = Depends(get_token_manager()._decode_token)
+    websocket: WebSocket, token: str = Depends(get_token_service()._decode_token)
 ):
     user_id = token
     if not user_id:

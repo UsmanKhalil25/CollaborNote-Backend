@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, Response
 
 from src.controllers.auth_controller import AuthController
-from src.services.token_manager import TokenManager
+from src.services.token_service import TokenService
 from src.schemas.user import UserRegister, UserLogin
 from src.schemas.token import TokenData
 
@@ -9,11 +9,15 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 def get_auth_controller() -> AuthController:
+    """Provides a AuthController instance."""
+
     return AuthController()
 
 
-def get_token_manager() -> TokenManager:
-    return TokenManager()
+def get_token_service() -> TokenService:
+    """Provides a TokenService instance."""
+
+    return TokenService()
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -28,29 +32,22 @@ async def register(
 async def login(
     user_data: UserLogin,
     response: Response,
-    token_manager: TokenManager = Depends(get_token_manager),
     auth_controller: AuthController = Depends(get_auth_controller),
 ):
-    return await auth_controller.login(
-        user_data=user_data, response=response, token_manager=token_manager
-    )
+    return await auth_controller.login(user_data=user_data, response=response)
 
 
 @router.post("/logout")
 async def logout(
-    token_data: tuple[TokenData, str] = Depends(get_token_manager().verify_token),
+    token_data: TokenData = Depends(get_token_service().validate_access_token),
     auth_controller: AuthController = Depends(get_auth_controller),
 ):
-    _, token = token_data
-    return await auth_controller.logout(token=token)
+    return await auth_controller.logout(token=token_data.token)
 
 
 @router.post("/refresh")
 async def refresh(
     response: Response,
-    token_manager: TokenManager = Depends(get_token_manager),
     auth_controller: AuthController = Depends(get_auth_controller),
 ):
-    return await auth_controller.refresh_token(
-        response=response, token_manager=token_manager
-    )
+    return await auth_controller.refresh_token(response=response)

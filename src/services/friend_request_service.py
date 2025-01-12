@@ -1,22 +1,25 @@
 from fastapi import HTTPException, status
 from datetime import datetime
-from typing import List, Optional
-from src.documents.friend_request import FriendRequest, FriendRequestStatus
+from typing import List
+
+from src.documents.friend_request_document import FriendRequest, FriendRequestStatus
 from src.documents.user_document import User
 from src.services.user_service import UserService
+from src.schemas.friend_request import FriendRequestReceived
+from src.schemas.user import UserInfo
+from src.repositories.friend_request_repository import FriendRequestRepository
 from src.utils import validate_object_id, convert_to_pydantic_object_id
 
 
 class FriendRequestService:
 
-    @staticmethod
-    async def get_received_requests(
-        user_id: str, status: Optional[str], user_service: UserService
-    ) -> List[dict]:
-        validate_object_id(user_id)
+    def __init__(self):
+        self.user_service = UserService()
+
+    async def get_received_requests(self, status: str, user_id: str) -> List[dict]:
+        user = await self.user_service.get_valid_user(user_id=user_id)
 
         upper_case_status = None
-
         if status:
             upper_case_status = status.upper()
             valid_state = FriendRequestStatus.__members__.get(upper_case_status)
@@ -25,34 +28,31 @@ class FriendRequestService:
                     status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status"
                 )
 
-        user_object_id = convert_to_pydantic_object_id(user_id)
-
-        await user_service.get_user_by_id(user_object_id)
-
-        query = {FriendRequest.receiver_id: user_object_id}
-        if upper_case_status:
-            query[FriendRequest.status] = status
-
-        received_requests = await FriendRequest.find_many(query).to_list()
+        FRIEND_REQUEST_RECEIVED_QUERY = {
+            "sender_id": user.id,
+        }
+        received_requests = await FriendRequestRepository.search_by_query(
+            FRIEND_REQUEST_RECEIVED_QUERY
+        )
 
         requests_with_senders = []
         for friend_request in received_requests:
             sender_user = await User.get(friend_request.sender_id)
             if sender_user:
-                friend_request_data = {
-                    "_id": str(friend_request.id),
-                    "created_at": friend_request.created_at,
-                    "receiver_id": str(friend_request.receiver_id),
-                    "sender_id": str(friend_request.sender_id),
-                    "status": friend_request.status,
-                    "responded_at": friend_request.responded_at,
-                    "sender": {
-                        "_id": str(sender_user.id),
-                        "first_name": sender_user.first_name,
-                        "last_name": sender_user.last_name,
-                        "email": sender_user.email,
-                    },
-                }
+                friend_request_data = FriendRequestReceived(
+                    id=str(friend_request.id),
+                    created_at=friend_request.created_at,
+                    updated_at=friend_request.updated_at,
+                    sender_id=str(friend_request.sender_id),
+                    receiver_id=str(friend_request.receiver_id),
+                    status=friend_request.status.value,
+                    sender_info=UserInfo(
+                        id=str(sender_user.id),
+                        email=sender_user.email,
+                        first_name=sender_user.first_name,
+                        last_name=sender_user.last_name,
+                    ),
+                )
                 requests_with_senders.append(friend_request_data)
 
         return requests_with_senders

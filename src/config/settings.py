@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from src.constants import APP_ENVIORNMENT_DEV, APP_ENVIORNMENT_PROD
 
 
 class Settings(BaseSettings):
@@ -13,9 +14,9 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self):
-        if self.app_environment == "dev":
-            return [self.app_localhost_url, self.app_frontend_url]
-        elif self.app_environment == "prod":
+        if self.app_environment == APP_ENVIORNMENT_DEV:
+            return [self.app_localhost_url]
+        elif self.app_environment == APP_ENVIORNMENT_PROD:
             return [self.app_frontend_url]
         return []
 

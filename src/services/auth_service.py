@@ -1,21 +1,27 @@
 from fastapi import HTTPException, status, Response
 
 from src.repositories.user_repository import UserRepository
-from src.documents.blacklist_token_document import BlackListToken
+from src.repositories.blacklist_token_repository import BlacklistTokenRepository
 from src.schemas.user import UserRegister, UserLogin
 from src.utils import hash_password, verify_password
-from src.services.token_manager import TokenManager
+from src.services.token_service import TokenService
+from src.constants import REFRESH_TOKEN_COOKIE
 
 
 class AuthService:
+    """Service for handling authentication-related operations."""
 
     def __init__(self):
         self.user_repository = UserRepository()
+        self.blacklist_token_repository = BlacklistTokenRepository()
+        self.token_service = TokenService()
 
     @staticmethod
     def _set_refresh_token(response: Response, token: str):
+        """Set the refresh token as an HttpOnly cookie in the response."""
+
         response.set_cookie(
-            key="refresh_token",
+            key=REFRESH_TOKEN_COOKIE,
             value=token,
             httponly=True,
             secure=True,
@@ -23,7 +29,8 @@ class AuthService:
         )
 
     async def register(self, user_data: UserRegister) -> None:
-        """Register a new user, ensuring the email is unique."""
+        """Register a new user."""
+
         existing_user = await self.user_repository.get_by_email(user_data.email)
         if existing_user:
             raise HTTPException(
@@ -41,9 +48,9 @@ class AuthService:
         self,
         user_data: UserLogin,
         response: Response,
-        token_manager: TokenManager,
     ) -> str:
-        """Authenticate user and return access token while setting refresh token as HttpOnly cookie."""
+        """Authenticate user and return an access token."""
+
         existing_user = await self.user_repository.get_by_email(user_data.email)
         if not existing_user or not verify_password(
             plain_password=user_data.password, hashed_password=existing_user.password
@@ -52,22 +59,20 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials"
             )
 
-        access_token = token_manager.create_access_token(
+        access_token = self.token_service.create_access_token(
             {"user_id": str(existing_user.id)}
         )
-        refresh_token = token_manager.create_refresh_token(
+        refresh_token = self.token_service.create_refresh_token(
             {"user_id": str(existing_user.id)}
         )
 
         self._set_refresh_token(response, refresh_token)
-
         return access_token
 
-    async def refresh_token(
-        self, response: Response, token_manager: TokenManager
-    ) -> str:
-        """Validate the refresh token, generate a new access token, and rotate the refresh token."""
-        refresh_token = response.request.cookies.get("refresh_token")
+    async def refresh_token(self, response: Response) -> str:
+        """Generate a new access token and rotate the refresh token."""
+
+        refresh_token = response.request.cookies.get(REFRESH_TOKEN_COOKIE)
 
         if not refresh_token:
             raise HTTPException(
@@ -75,7 +80,7 @@ class AuthService:
                 detail="Refresh token is missing",
             )
 
-        user_id = token_manager.verify_token(refresh_token)
+        user_id = self.token_service.verify_token(refresh_token)
 
         if not user_id:
             raise HTTPException(
@@ -83,8 +88,10 @@ class AuthService:
                 detail="Invalid or expired refresh token",
             )
 
-        new_access_token = token_manager.create_access_token(data={"user_id": user_id})
-        new_refresh_token = token_manager.create_refresh_token(
+        new_access_token = self.token_service.create_access_token(
+            data={"user_id": user_id}
+        )
+        new_refresh_token = self.token_service.create_refresh_token(
             data={"user_id": user_id}
         )
 
@@ -92,8 +99,7 @@ class AuthService:
 
         return new_access_token
 
-    @staticmethod
-    async def blacklist_token(token: str) -> None:
+    async def blacklist_token(self, token: str) -> None:
         """Blacklist the token for logout."""
 
         if not token:
@@ -101,5 +107,5 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Token missing or malformed",
             )
-        token = BlackListToken(token=token)
-        await token.insert()
+
+        await self.blacklist_token_repository.save_token(token=token)

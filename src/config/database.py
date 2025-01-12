@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from src.documents.blacklist_token_document import BlackListToken
 from src.documents.study_room import StudyRoom
 from src.documents.user_document import User
-from src.documents.friend_request import FriendRequest
+from src.documents.friend_request_document import FriendRequest
 from src.documents.invitation import Invitation
 from src.config.settings import settings
 

@@ -2,6 +2,7 @@ from typing import Optional
 from src.services.user_service import UserService
 from src.utils import create_response
 from src.constants import RESPONSE_STATUS_SUCCESS
+from src.schemas.token import TokenData
 from src.services.friend_request_service import FriendRequestService
 
 
@@ -9,12 +10,12 @@ class FriendRequestController:
     def __init__(self):
         self.friend_request_service = FriendRequestService()
 
-    async def get_received_requests(
-        self, user_id: str, status: Optional[str], user_service: UserService
-    ):
+    async def get_received_requests(self, status: Optional[str], token: TokenData):
+        user_id = token.user_id
         friend_request = await self.friend_request_service.get_received_requests(
-            user_id, status, user_service
+            status=status, user_id=user_id
         )
+
         return create_response(
             RESPONSE_STATUS_SUCCESS,
             "Friend requests fetched successfully",
