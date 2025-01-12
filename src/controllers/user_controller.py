@@ -27,7 +27,7 @@ class UserController:
         return create_response(
             RESPONSE_STATUS_SUCCESS,
             "Current user fetched successfully",
-            data={"current_user": current_user},
+            data={"user": current_user},
         )
 
     async def get_user_friends(self, token: TokenData):

@@ -17,9 +17,8 @@ from src.utils import http_exception_handler, validation_exception_handler
 
 app = FastAPI(lifespan=db_lifespan)
 
-origins = [
-    settings.allowed_origins,
-]
+origins = settings.allowed_origins
+
 
 app.add_middleware(
     CORSMiddleware,
