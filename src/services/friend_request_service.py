@@ -8,18 +8,38 @@ from src.services.user_service import UserService
 from src.schemas.friend_request import FriendRequestReceived
 from src.schemas.user import UserInfo
 from src.repositories.friend_request_repository import FriendRequestRepository
-from src.utils import validate_object_id, convert_to_pydantic_object_id
+from src.utils import validate_object_id, convert_to_pydantic_object_id, convert_to_str
 
 
 class FriendRequestService:
 
     def __init__(self):
         self.user_service = UserService()
+        self.friend_request_repository = FriendRequestRepository()
+
+    async def get_valid_friend_request(self, friend_request_id: str) -> FriendRequest:
+        """Fetch and validate a FriendRequest by ID."""
+
+        validate_object_id(friend_request_id)
+        friend_request_object_id = convert_to_pydantic_object_id(friend_request_id)
+
+        friend_request = await self.friend_request_repository.get_by_id(
+            friend_request_object_id
+        )
+        if not friend_request:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"FriendRequest with ID {friend_request_id} not found",
+            )
+        return friend_request
 
     async def get_received_requests(self, status: str, user_id: str) -> List[dict]:
+        """Retrieve a list of received friend requests for a given user with optional status filtering."""
+
         user = await self.user_service.get_valid_user(user_id=user_id)
 
-        upper_case_status = None
+        upper_case_status = "PENDING"
+
         if status:
             upper_case_status = status.upper()
             valid_state = FriendRequestStatus.__members__.get(upper_case_status)
@@ -30,7 +50,9 @@ class FriendRequestService:
 
         FRIEND_REQUEST_RECEIVED_QUERY = {
             "sender_id": user.id,
+            "status": upper_case_status,
         }
+
         received_requests = await FriendRequestRepository.search_by_query(
             FRIEND_REQUEST_RECEIVED_QUERY
         )
@@ -57,32 +79,26 @@ class FriendRequestService:
 
         return requests_with_senders
 
-    @staticmethod
-    async def send_friend_request(
-        from_user_id: str, to_user_id: str, user_service: UserService
-    ):
-        validate_object_id(from_user_id)
-        validate_object_id(to_user_id)
+    async def send_friend_request(self, from_user_id: str, to_user_id: str):
+        """Send a friend request from one user to another."""
 
-        from_user_object_id = convert_to_pydantic_object_id(from_user_id)
-        to_user_object_id = convert_to_pydantic_object_id(to_user_id)
+        from_user = await self.user_service.get_valid_user(user_id=from_user_id)
+        to_user = await self.user_service.get_valid_user(user_id=to_user_id)
 
-        from_user = await user_service.get_user_by_id(from_user_object_id)
-        to_user = await user_service.get_user_by_id(to_user_object_id)
-
-        if user_service.check_if_already_friends(
-            to_user, from_user_object_id
-        ) or user_service.check_if_already_friends(from_user, to_user_object_id):
+        if self.user_service.are_users_friends(
+            from_user, to_user
+        ) or self.user_service.are_users_friends(to_user, from_user):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You are already friends with this user",
             )
 
         existing_request = await FriendRequest.find_one(
-            FriendRequest.sender_id == from_user_object_id,
-            FriendRequest.receiver_id == to_user_object_id,
+            FriendRequest.sender_id == from_user.id,
+            FriendRequest.receiver_id == to_user.id,
             FriendRequest.status == FriendRequestStatus.PENDING,
         )
+
         if existing_request:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -90,10 +106,11 @@ class FriendRequestService:
             )
 
         existing_request = await FriendRequest.find_one(
-            FriendRequest.receiver_id == from_user_object_id,
-            FriendRequest.sender_id == to_user_object_id,
+            FriendRequest.receiver_id == from_user.id,
+            FriendRequest.sender_id == to_user.id,
             FriendRequest.status == FriendRequestStatus.PENDING,
         )
+
         if existing_request:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -101,47 +118,36 @@ class FriendRequestService:
             )
 
         friend_request = FriendRequest(
-            sender_id=from_user_object_id,
-            receiver_id=to_user_object_id,
+            sender_id=from_user.id,
+            receiver_id=to_user.id,
             status=FriendRequestStatus.PENDING,
         )
+
         await friend_request.insert()
 
         from_user.friend_requests_sent.append(friend_request.id)
         to_user.friend_requests_received.append(friend_request.id)
+
         await from_user.save()
         await to_user.save()
 
         return friend_request
 
-    @staticmethod
     async def update_request_status(
-        user_id: str, request_id: str, new_status: str, user_service: UserService
+        self, user_id: str, request_id: str, request_status: str
     ):
-        validate_object_id(request_id)
+        """Update the status of a friend request."""
+        user = await self.user_service.get_valid_user(user_id)
+        friend_request = await self.get_valid_friend_request(request_id)
 
-        upper_case_status = new_status.upper()
+        upper_case_status = request_status.upper()
         valid_state = FriendRequestStatus.__members__.get(upper_case_status)
         if not valid_state:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status"
             )
 
-        request_object_id = convert_to_pydantic_object_id(request_id)
-        friend_request = await FriendRequest.get(request_object_id)
-        if not friend_request:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Friend request not found"
-            )
-
-        user_object_id = convert_to_pydantic_object_id(user_id)
-
-        user = await user_service.get_user_by_id(user_object_id)
-
-        if (
-            convert_to_pydantic_object_id(request_id)
-            not in user.friend_requests_received
-        ):
+        if friend_request.id not in user.friend_requests_sent:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not authorized to update this friend request",
@@ -182,7 +188,7 @@ class FriendRequestService:
             )
 
         friend_request.status = valid_state
-        friend_request.responded_at = datetime.now()
+        friend_request.updated_at = datetime.now()
 
         if valid_state == FriendRequestStatus.ACCEPTED:
             existing_request = await FriendRequest.find_one(
@@ -194,9 +200,10 @@ class FriendRequestService:
             if existing_request:
                 await existing_request.delete()
 
-            await user_service.add_friend(
-                str(friend_request.sender_id), str(friend_request.receiver_id)
+            friend = await self.user_service.get_valid_user(
+                user_id=convert_to_str(friend_request.sender_id)
             )
+            await self.user_service.update_friendship(user, friend, add=True)
 
         await friend_request.save()
 

@@ -131,19 +131,23 @@ class UserService:
         current_user = await self.get_valid_user(user_id)
         friend = await self.get_valid_user(friend_id)
 
-        already_friends = friend.id in current_user.friends
-        if add and already_friends:
+        if add and self.are_users_friends(current_user, friend):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You are already friends",
             )
-        elif not add and not already_friends:
+        elif not add and not self.are_users_friends(current_user, friend):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You are not friends with this user",
             )
 
         await self.update_friendship(current_user, friend, add)
+
+    def are_users_friends(self, user: User, friend: User) -> bool:
+        """Checks if two users are friends."""
+
+        return friend.id in user.friends
 
     async def add_friend(self, user_id: str, friend_id: str):
         """Add a friend to the user's friend list."""
