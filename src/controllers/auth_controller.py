@@ -15,7 +15,7 @@ class AuthController:
     async def register(self, user_data: UserRegister):
         """Register a new user."""
 
-        await self.auth_service.register(user_data=user_data)
+        await self.auth_service.register(user_data)
         return create_response(RESPONSE_STATUS_SUCCESS, "User registered successfully")
 
     async def login(
@@ -37,7 +37,7 @@ class AuthController:
     async def refresh_token(self, response: Response):
         """Refresh the access token using the refresh token."""
 
-        new_access_token = await self.auth_service.refresh_token(response=response)
+        new_access_token = await self.auth_service.refresh_token(response)
         return create_response(
             RESPONSE_STATUS_SUCCESS,
             "Token refreshed successfully",
@@ -47,5 +47,5 @@ class AuthController:
     async def logout(self, token: str):
         """Log out a user by blacklisting the provided token."""
 
-        await self.auth_service.blacklist_token(token=token)
+        await self.auth_service.blacklist_token(token)
         return create_response(RESPONSE_STATUS_SUCCESS, "Logged out successfully")

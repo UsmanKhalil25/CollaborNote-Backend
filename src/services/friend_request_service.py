@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from src.documents.friend_request_document import FriendRequest, FriendRequestStatus
 from src.documents.user_document import User
@@ -33,24 +33,24 @@ class FriendRequestService:
             )
         return friend_request
 
-    async def get_received_requests(self, status: str, user_id: str) -> List[dict]:
+    async def get_received_requests(
+        self, status: Optional[str], user_id: str
+    ) -> List[dict]:
         """Retrieve a list of received friend requests for a given user with optional status filtering."""
 
         user = await self.user_service.get_valid_user(user_id=user_id)
 
-        upper_case_status = "PENDING"
+        upper_case_status = "PENDING" if not status else status.upper()
 
-        if status:
-            upper_case_status = status.upper()
-            valid_state = FriendRequestStatus.__members__.get(upper_case_status)
-            if not valid_state:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status"
-                )
+        valid_state = FriendRequestStatus.__members__.get(upper_case_status)
+        if not valid_state:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status"
+            )
 
         FRIEND_REQUEST_RECEIVED_QUERY = {
-            "sender_id": user.id,
-            "status": upper_case_status,
+            "receiver_id": user.id,
+            "status": upper_case_status.lower(),
         }
 
         received_requests = await FriendRequestRepository.search_by_query(
@@ -147,7 +147,7 @@ class FriendRequestService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status"
             )
 
-        if friend_request.id not in user.friend_requests_sent:
+        if friend_request.id not in user.friend_requests_received:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not authorized to update this friend request",

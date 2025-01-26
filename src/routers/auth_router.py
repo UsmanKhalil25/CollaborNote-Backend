@@ -34,7 +34,7 @@ async def login(
     response: Response,
     auth_controller: AuthController = Depends(get_auth_controller),
 ):
-    return await auth_controller.login(user_data=user_data, response=response)
+    return await auth_controller.login(user_data, response)
 
 
 @router.post("/logout")
@@ -42,7 +42,7 @@ async def logout(
     token_data: TokenData = Depends(get_token_service().validate_access_token),
     auth_controller: AuthController = Depends(get_auth_controller),
 ):
-    return await auth_controller.logout(token=token_data.token)
+    return await auth_controller.logout(token_data.token)
 
 
 @router.post("/refresh")
@@ -50,4 +50,4 @@ async def refresh(
     response: Response,
     auth_controller: AuthController = Depends(get_auth_controller),
 ):
-    return await auth_controller.refresh_token(response=response)
+    return await auth_controller.refresh_token(response)
